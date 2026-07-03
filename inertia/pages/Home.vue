@@ -383,6 +383,7 @@ const projNightEl = ref<HTMLElement | null>(null)
 const projSunEl = ref<HTMLElement | null>(null)
 const projMoonEl = ref<HTMLElement | null>(null)
 const projStarsEl = ref<HTMLElement | null>(null)
+const kmEl = ref<HTMLElement | null>(null)
 const eduFillEl = ref<HTMLElement | null>(null)
 const proFillEl = ref<HTMLElement | null>(null)
 const introOn = ref(false)
@@ -572,6 +573,16 @@ function update(initial: boolean) {
     cursorCol = col
     runner.style.transform = `translate(${x - 26}px, ${py - 40}px)`
 
+    /* Kilometrage : un marathon (42,2 km) du depart a l'arrivee */
+    if (kmEl.value) {
+      const d = (p * 42.2).toFixed(1)
+      const total = '42.2'
+      const fr = lang.value === 'fr'
+      kmEl.value.textContent = (fr ? d.replace('.', ',') : d) + ' / ' + (fr ? total.replace('.', ',') : total) + ' km'
+      kmEl.value.style.color = col
+      kmEl.value.style.borderColor = col
+    }
+
     const pt2 = path.getPointAtLength(Math.min(len, p * len + 8))
     const dxp = (pt2.x - pt.x) * sx,
       dyp = (pt2.y - pt.y) * sy
@@ -726,9 +737,10 @@ function updateInterlude(vh: number) {
     interRunImgEl.value.style.color = col
     if (interGlowEl.value) interGlowEl.value.style.background = col
   }
+  /* Pas de fondu en fin de parcours : le coureur sort de l'ecran par la
+     gauche et reapparait au pied des cretes (premier projet) */
   const opIn = Math.min(1, prog / 0.08)
-  const opOut = prog > 0.9 ? Math.max(0, (1 - prog) / 0.1) : 1
-  irun.style.opacity = (prog <= 0 ? 0 : Math.min(opIn, opOut)).toFixed(3)
+  irun.style.opacity = (prog <= 0 ? 0 : opIn).toFixed(3)
 }
 
 function updateProjects(vh: number, p: number) {
@@ -1223,6 +1235,9 @@ const trailPath =
     <div ref="cursorDotEl" class="cursor-dot"></div>
     <div ref="cursorRingEl" class="cursor-ring"></div>
 
+    <!-- Kilometrage du parcours -->
+    <div v-if="showRunner" ref="kmEl" class="km-hud">0,0 / 42,2 km</div>
+
     <!-- Ambient particles -->
     <div v-if="showParticles" style="position: fixed; inset: 0; pointer-events: none; z-index: 40">
       <span v-for="(p, i) in particles" :key="i" :style="p.style"></span>
@@ -1461,26 +1476,12 @@ const trailPath =
     </section>
 
     <!-- Interlude : le sentier devie a travers l'ecran, riviere + pont -->
-    <section id="interlude" ref="interludeEl" aria-hidden="true" style="position: relative; height: 130vh; background: linear-gradient(180deg, #1a0f15 0%, #131720 45%, #0c1a23 100%); overflow: hidden">
+    <section id="interlude" ref="interludeEl" aria-hidden="true" style="position: relative; height: 115vh; background: linear-gradient(180deg, #1a0f15 0%, #131720 45%, #0c1a23 100%); overflow: hidden">
       <svg viewBox="0 0 1000 650" preserveAspectRatio="none" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%">
-        <defs>
-          <linearGradient id="riverGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0" stop-color="#123a4c"></stop>
-            <stop offset="1" stop-color="#0a2430"></stop>
-          </linearGradient>
-        </defs>
         <!-- Collines -->
         <path d="M0,650 L0,540 L180,470 L300,430 L400,430 L520,480 L700,555 L880,490 L1000,530 L1000,650 Z" fill="#0d2a1f" opacity="0.7"></path>
-        <!-- Riviere qui descend des collines -->
-        <path d="M318,650 C330,560 336,500 326,445 L374,445 C366,500 372,560 386,650 Z" fill="url(#riverGrad)" opacity="0.9"></path>
-        <path class="wfall" d="M349,455 C343,520 347,580 356,645" fill="none" stroke="rgba(163,216,244,0.35)" stroke-width="2.5" stroke-linecap="round"></path>
-        <!-- Sentier : du fil conducteur (haut droite) au pied des cretes (bas gauche) -->
-        <path ref="interPathEl" d="M950,10 C830,120 640,150 560,230 C480,310 470,380 452,470 C410,444 330,444 285,470 C200,500 90,540 30,635" fill="none" stroke="url(#trailGrad)" stroke-width="2.6" stroke-dasharray="2 9" stroke-linecap="round" opacity="0.55"></path>
-        <!-- Pont -->
-        <path d="M262,486 C310,442 400,442 448,486" fill="none" stroke="#7a4a2b" stroke-width="9" stroke-linecap="round"></path>
-        <path d="M262,486 C310,442 400,442 448,486" fill="none" stroke="#2b1a10" stroke-width="9" stroke-linecap="round" stroke-dasharray="3 15"></path>
-        <line x1="278" y1="478" x2="278" y2="512" stroke="#5d3820" stroke-width="6"></line>
-        <line x1="432" y1="478" x2="432" y2="512" stroke="#5d3820" stroke-width="6"></line>
+        <!-- Le fil conducteur bifurque et traverse l'ecran vers les cretes -->
+        <path ref="interPathEl" d="M925,-20 C900,120 700,180 560,260 C420,340 200,430 60,560 C20,598 -10,640 -40,690" fill="none" stroke="url(#trailGrad)" stroke-width="2.6" stroke-dasharray="2 9" stroke-linecap="round" opacity="0.55"></path>
       </svg>
       <p style="position: absolute; top: 12%; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 0.3em; text-transform: uppercase; color: #74c69d; opacity: 0.8; white-space: nowrap">{{ t.interludeKicker }}</p>
       <div ref="interRunnerEl" class="runWrap" style="position: absolute; left: 0; top: 0; width: 52px; height: 52px; opacity: 0; will-change: transform; z-index: 2">
@@ -1500,7 +1501,7 @@ const trailPath =
         <div ref="projDayEl" style="position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(140, 200, 255, 0.2), rgba(255, 241, 181, 0.12) 55%, transparent 80%)"></div>
         <div ref="projSunsetEl" style="position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(30, 20, 60, 0.15) 20%, rgba(255, 122, 61, 0.2) 62%, rgba(255, 170, 80, 0.3) 100%)"></div>
         <div ref="projSunEl" style="position: absolute; left: -45px; top: -45px; width: 90px; height: 90px; border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform; background: radial-gradient(circle, rgba(255, 228, 140, 0.95) 30%, rgba(255, 180, 84, 0.5) 55%, transparent 72%)"></div>
-        <div ref="projMoonEl" style="position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform; box-shadow: inset -12px 8px 0 2px #dbe7ef; filter: drop-shadow(0 0 12px rgba(219, 231, 239, 0.45))"></div>
+        <div ref="projMoonEl" style="position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform; background: radial-gradient(circle at 66% 58%, rgba(150, 170, 185, 0.5) 0 8%, transparent 9%), radial-gradient(circle at 40% 68%, rgba(150, 170, 185, 0.4) 0 6%, transparent 7%), radial-gradient(circle at 36% 32%, #f2f7fa, #d5e2ea 55%, #b9cdd9); filter: drop-shadow(0 0 16px rgba(223, 233, 240, 0.55))"></div>
         <div ref="projStarsEl" style="position: absolute; left: 0; top: 0; right: 0; height: 55%; pointer-events: none; opacity: 0">
           <span v-for="(s, i) in projStars" :key="i" :style="s.style"></span>
         </div>
