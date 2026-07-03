@@ -77,7 +77,6 @@ const DICT = {
     xpTitle: 'Expériences',
     xpEduTitle: 'Parcours scolaire',
     xpProTitle: 'Expériences professionnelles',
-    interludeKicker: 'Cap sur les crêtes',
     contactLabel: 'Travaillons ensemble',
     contactTitle: 'Contact',
     contactIntro:
@@ -125,7 +124,6 @@ const DICT = {
     xpTitle: 'Experience',
     xpEduTitle: 'Education',
     xpProTitle: 'Work experience',
-    interludeKicker: 'Heading for the ridges',
     contactLabel: "Let\u2019s work together",
     contactTitle: 'Contact',
     contactIntro:
@@ -372,11 +370,6 @@ const projCounterEl = ref<HTMLElement | null>(null)
 const projBarEl = ref<HTMLElement | null>(null)
 const cursorDotEl = ref<HTMLElement | null>(null)
 const cursorRingEl = ref<HTMLElement | null>(null)
-const interludeEl = ref<HTMLElement | null>(null)
-const interPathEl = ref<SVGPathElement | null>(null)
-const interRunnerEl = ref<HTMLElement | null>(null)
-const interRunImgEl = ref<SVGElement | null>(null)
-const interGlowEl = ref<HTMLElement | null>(null)
 const projDayEl = ref<HTMLElement | null>(null)
 const projSunsetEl = ref<HTMLElement | null>(null)
 const projNightEl = ref<HTMLElement | null>(null)
@@ -404,7 +397,6 @@ let footSide = 0
 let celebrated = false
 let cpLang = 'fr'
 let lastDustX = -999
-let interVis = 1
 let mx = 0
 let my = 0
 let ringX = 0
@@ -508,12 +500,10 @@ function onScroll() {
   if (!reduce) {
     runnerEl.value && runnerEl.value.classList.add('running')
     projRunnerEl.value && projRunnerEl.value.classList.add('running')
-    interRunnerEl.value && interRunnerEl.value.classList.add('running')
     clearTimeout(idle)
     idle = setTimeout(() => {
       runnerEl.value && runnerEl.value.classList.remove('running')
       projRunnerEl.value && projRunnerEl.value.classList.remove('running')
-      interRunnerEl.value && interRunnerEl.value.classList.remove('running')
     }, 220)
   }
   if (raf) cancelAnimationFrame(raf)
@@ -531,7 +521,6 @@ function update(initial: boolean) {
 
   parallax.forEach((q) => (q.el.style.transform = `translateY(${y * q.speed}px)`))
 
-  if (!reduce) updateInterlude(vh)
   if (!reduce) updateProjects(vh, p)
 
   if (reveals.length) {
@@ -573,9 +562,16 @@ function update(initial: boolean) {
     cursorCol = col
     runner.style.transform = `translate(${x - 26}px, ${py - 40}px)`
 
-    /* Kilometrage : un marathon (42,2 km) du depart a l'arrivee */
+    /* Kilometrage : un marathon (42,2 km) du depart jusqu'au moment
+       ou l'arche declenche les confettis (fr.top < 78% de la hauteur) */
     if (kmEl.value) {
-      const d = (p * 42.2).toFixed(1)
+      let kmP = p
+      if (finishEl.value) {
+        const fTop = finishEl.value.getBoundingClientRect().top + y
+        const finishScroll = fTop - vh * 0.78
+        kmP = finishScroll > 0 ? Math.min(1, y / finishScroll) : 1
+      }
+      const d = (kmP * 42.2).toFixed(1)
       const total = '42.2'
       const fr = lang.value === 'fr'
       kmEl.value.textContent = (fr ? d.replace('.', ',') : d) + ' / ' + (fr ? total.replace('.', ',') : total) + ' km'
@@ -702,47 +698,6 @@ function celebrate() {
   clearTimeout(celebT)
   celebT = setTimeout(() => el && el.classList.remove('celebrate'), 1500)
 }
-
-/* Interlude : le coureur quitte le fil conducteur et traverse l'ecran
-   (riviere + pont) pour rejoindre le pied des cretes */
-function updateInterlude(vh: number) {
-  const sec = interludeEl.value,
-    ipath = interPathEl.value,
-    irun = interRunnerEl.value
-  interVis = 1
-  if (!sec || !ipath || !irun) return
-  const r = sec.getBoundingClientRect()
-  if (r.top >= vh || r.bottom <= 0) {
-    irun.style.opacity = '0'
-    return
-  }
-  const prog = Math.min(1, Math.max(0, (vh * 0.7 - r.top) / (r.height - vh * 0.3)))
-  interVis = prog < 0.15 ? 1 - prog / 0.15 : 0
-  const len = ipath.getTotalLength()
-  const pt = ipath.getPointAtLength(prog * len)
-  const sx = sec.clientWidth / 1000,
-    sy = sec.clientHeight / 650
-  const x = pt.x * sx,
-    y = pt.y * sy
-  irun.style.transform = `translate(${x - 26}px, ${y - 40}px)`
-  const pt2 = ipath.getPointAtLength(Math.min(len, prog * len + 8))
-  const dx = (pt2.x - pt.x) * sx,
-    dy = (pt2.y - pt.y) * sy
-  if (interRunImgEl.value && (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001)) {
-    const face = dx >= 0 ? 1 : -1
-    let lean = (Math.atan2(dx, Math.max(0.01, dy)) * 180) / Math.PI
-    lean = Math.max(-28, Math.min(28, lean))
-    interRunImgEl.value.style.transform = `scaleX(${face}) rotate(${face === -1 ? -lean : lean}deg)`
-    const col = runnerColor(0.28 + prog * 0.1)
-    interRunImgEl.value.style.color = col
-    if (interGlowEl.value) interGlowEl.value.style.background = col
-  }
-  /* Pas de fondu en fin de parcours : le coureur sort de l'ecran par la
-     gauche et reapparait au pied des cretes (premier projet) */
-  const opIn = Math.min(1, prog / 0.08)
-  irun.style.opacity = (prog <= 0 ? 0 : opIn).toFixed(3)
-}
-
 function updateProjects(vh: number, p: number) {
   const sec = projSectionEl.value,
     track = projTrackEl.value,
@@ -782,7 +737,7 @@ function updateProjects(vh: number, p: number) {
   }
   const inSection = local >= 0 && local <= scrollRange
   const eExit = exit * exit * (3 - 2 * exit)
-  void entry
+  const eEntry = entry * entry * (3 - 2 * entry)
 
   const mountPath = projMountPathEl.value
   const mt = mountPath ? (mountPath.closest('.proj-mountains') as HTMLElement | null) : null
@@ -805,16 +760,17 @@ function updateProjects(vh: number, p: number) {
     }
   }
   /* Position du coureur des cretes : interpolee vers le fil conducteur
-     a la sortie (a l'entree il arrive de l'interlude, au pied des cretes) */
-  const C = { x: Rm.x + (Cv.x - Rm.x) * eExit, y: Rm.y + (Cv.y - Rm.y) * eExit }
+     a l'entree ET a la sortie pour une passation sans a-coup */
+  const blend = Math.max(eExit, eEntry)
+  const C = { x: Rm.x + (Cv.x - Rm.x) * blend, y: Rm.y + (Cv.y - Rm.y) * blend }
   let handover = eExit < 0.7 ? 0 : (eExit - 0.7) / 0.3
   handover = handover * handover * (3 - 2 * handover)
 
   let trailVis: number
   if (!inSection) trailVis = 1
+  else if (pp < 0.12) trailVis = eEntry
   else if (pp > 0.8) trailVis = eExit
   else trailVis = 0
-  trailVis = Math.min(trailVis, interVis)
   if (trail) {
     trail.style.opacity = trailVis.toFixed(3)
     trail.style.clipPath = 'none'
@@ -823,13 +779,15 @@ function updateProjects(vh: number, p: number) {
   if (runnerEl.value) {
     let vv: number
     if (!inSection) vv = 1
+    else if (pp < 0.12) vv = eEntry
     else if (pp > 0.8) vv = handover
     else vv = 0
-    runnerEl.value.style.opacity = Math.min(vv, interVis).toFixed(3)
+    runnerEl.value.style.opacity = vv.toFixed(3)
   }
 
   let mvis: number
-  if (!inSection) mvis = local < 0 && rect.top < vh ? 1 : 0
+  if (!inSection) mvis = 0
+  else if (pp < 0.12) mvis = 1 - eEntry
   else if (pp > 0.8) mvis = 1 - handover
   else mvis = 1
   if (projRunnerEl.value && mountPath) {
@@ -1471,25 +1429,6 @@ const trailPath =
             <p style="font-size: 0.92rem; color: #48cae4; margin-bottom: 0.7rem">{{ xp.company }}</p>
             <p v-if="xp.desc" style="font-size: 0.92rem; line-height: 1.7; color: #a3b3ab">{{ xp.desc }}</p>
           </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- Interlude : le sentier devie a travers l'ecran, riviere + pont -->
-    <section id="interlude" ref="interludeEl" aria-hidden="true" style="position: relative; height: 115vh; background: linear-gradient(180deg, #1a0f15 0%, #131720 45%, #0c1a23 100%); overflow: hidden">
-      <svg viewBox="0 0 1000 650" preserveAspectRatio="none" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%">
-        <!-- Collines -->
-        <path d="M0,650 L0,540 L180,470 L300,430 L400,430 L520,480 L700,555 L880,490 L1000,530 L1000,650 Z" fill="#0d2a1f" opacity="0.7"></path>
-        <!-- Le fil conducteur bifurque et traverse l'ecran vers les cretes -->
-        <path ref="interPathEl" d="M925,-20 C900,120 700,180 560,260 C420,340 200,430 60,560 C20,598 -10,640 -40,690" fill="none" stroke="url(#trailGrad)" stroke-width="2.6" stroke-dasharray="2 9" stroke-linecap="round" opacity="0.55"></path>
-      </svg>
-      <p style="position: absolute; top: 12%; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 0.3em; text-transform: uppercase; color: #74c69d; opacity: 0.8; white-space: nowrap">{{ t.interludeKicker }}</p>
-      <div ref="interRunnerEl" class="runWrap" style="position: absolute; left: 0; top: 0; width: 52px; height: 52px; opacity: 0; will-change: transform; z-index: 2">
-        <span ref="interGlowEl" style="position: absolute; left: 50%; bottom: 2px; width: 36px; height: 10px; transform: translateX(-50%); border-radius: 50%; background: rgba(82, 183, 136, 0.5); filter: blur(5px)"></span>
-        <div class="bob" style="width: 100%; height: 100%">
-          <svg ref="interRunImgEl" viewBox="0 0 24 24" style="width: 100%; height: 100%; display: block; color: #52b788; transform-origin: 50% 62%; transition: transform 0.16s ease-out, color 0.25s linear; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5))">
-            <path fill="currentColor" :d="RUNNER_PATH"></path>
-          </svg>
         </div>
       </div>
     </section>
