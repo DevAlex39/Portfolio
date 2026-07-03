@@ -529,3 +529,402 @@ section a[data-magnetic]:hover {
     padding: 0 6vw !important;
   }
 }
+
+/* ==========================================================================
+   Effets additionnels : curseur, brouillard, aurore, etoiles filantes,
+   ripple checkpoints, dossard, odometre, intro, crossfade langue
+   ========================================================================== */
+
+/* --- 1. Curseur personnalise (pointeur fin uniquement) --- */
+.has-cursor,
+.has-cursor * {
+  cursor: none !important;
+}
+.cursor-dot {
+  position: fixed;
+  left: -4px;
+  top: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #52b788;
+  pointer-events: none;
+  z-index: 500;
+  opacity: 0;
+}
+.cursor-ring {
+  position: fixed;
+  left: -18px;
+  top: -18px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 1.5px solid #52b788;
+  pointer-events: none;
+  z-index: 500;
+  opacity: 0;
+  transition:
+    width 0.25s,
+    height 0.25s,
+    left 0.25s,
+    top 0.25s,
+    opacity 0.25s;
+}
+.has-cursor .cursor-dot {
+  opacity: 1;
+}
+.has-cursor .cursor-ring {
+  opacity: 0.65;
+}
+.cur-hover .cursor-ring {
+  width: 54px;
+  height: 54px;
+  left: -27px;
+  top: -27px;
+  opacity: 1;
+}
+
+/* --- 7. Timeline qui se dessine au scroll --- */
+.tl-fill {
+  position: absolute;
+  inset: 0;
+  transform-origin: top;
+  transform: scaleY(0);
+  transition: transform 0.2s linear;
+}
+
+/* --- 9. Brouillard de vallee --- */
+.fog {
+  position: absolute;
+  left: -20%;
+  width: 140%;
+  height: 90px;
+  pointer-events: none;
+  border-radius: 50%;
+  filter: blur(26px);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(212, 230, 241, 0.1),
+    rgba(163, 216, 244, 0.05),
+    transparent
+  );
+}
+.fog-1 {
+  bottom: 5vh;
+  animation: fogDrift 26s ease-in-out infinite alternate;
+}
+.fog-2 {
+  bottom: 15vh;
+  height: 70px;
+  opacity: 0.7;
+  animation: fogDrift 34s ease-in-out -12s infinite alternate-reverse;
+}
+@keyframes fogDrift {
+  from {
+    transform: translateX(-6%);
+  }
+  to {
+    transform: translateX(6%);
+  }
+}
+
+/* --- 2. Etoiles filantes --- */
+.shoot {
+  position: absolute;
+  width: 110px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(238, 242, 239, 0.9), transparent);
+  transform: rotate(16deg);
+  opacity: 0;
+  pointer-events: none;
+  animation: shoot 11s linear infinite;
+}
+@keyframes shoot {
+  0%,
+  87% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(16deg);
+  }
+  90% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-38vw, 11vw) rotate(16deg);
+  }
+}
+
+/* --- 10. Aurore boreale --- */
+.aurora {
+  position: absolute;
+  top: -6%;
+  left: 8%;
+  width: 84%;
+  height: 46%;
+  pointer-events: none;
+  filter: blur(42px);
+  opacity: 0.5;
+  background: linear-gradient(
+    100deg,
+    transparent 8%,
+    rgba(82, 183, 136, 0.2) 30%,
+    rgba(72, 202, 228, 0.16) 52%,
+    rgba(82, 183, 136, 0.12) 72%,
+    transparent 92%
+  );
+  animation: aurora 13s ease-in-out infinite alternate;
+}
+@keyframes aurora {
+  from {
+    transform: skewX(-6deg) translateX(-3%) scaleY(1);
+  }
+  50% {
+    opacity: 0.72;
+  }
+  to {
+    transform: skewX(5deg) translateX(3%) scaleY(1.18);
+  }
+}
+
+/* --- 3. Ripple des checkpoints --- */
+.cp-ripple {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid #52b788;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: cpRipple 0.65s ease-out forwards;
+}
+@keyframes cpRipple {
+  to {
+    width: 58px;
+    height: 58px;
+    opacity: 0;
+  }
+}
+
+/* --- 4. Dossard de course (rang d'arrivee) --- */
+.bib-card {
+  margin-top: 1.5rem;
+  position: relative;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  padding: 1rem 2.2rem 0.9rem;
+  background: #f4f4f4;
+  border: 2px solid #13131a;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  transform-origin: top center;
+  animation: bibFlip 0.9s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes bibFlip {
+  from {
+    transform: perspective(700px) rotateX(-88deg);
+    opacity: 0;
+  }
+  55% {
+    transform: perspective(700px) rotateX(14deg);
+    opacity: 1;
+  }
+  to {
+    transform: perspective(700px) rotateX(0deg);
+    opacity: 1;
+  }
+}
+.bib-pins {
+  position: absolute;
+  top: 7px;
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 12px;
+}
+.bib-pins span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 35%, #cfd6d2, #6b736e);
+  box-shadow: inset 0 0 2px rgba(0, 0, 0, 0.6);
+}
+.bib-top {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.58rem;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: #6b736e;
+  margin-top: 0.3rem;
+}
+.bib-num {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 2.6rem;
+  font-weight: 700;
+  line-height: 1;
+  color: #13131a;
+}
+.bib-text {
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #2b3330;
+  max-width: 250px;
+}
+
+/* --- 5. Barres de competences : graduations + objectif --- */
+.skill-bar {
+  position: relative;
+  height: 5px;
+  background: rgba(255, 255, 255, 0.07);
+  border-radius: 3px;
+}
+.skill-bar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent calc(10% - 1px),
+    rgba(8, 8, 10, 0.55) calc(10% - 1px),
+    rgba(8, 8, 10, 0.55) 10%
+  );
+  pointer-events: none;
+}
+.skill-goal {
+  position: absolute;
+  top: -3px;
+  width: 2px;
+  height: 11px;
+  border-radius: 1px;
+  background: #ffd166;
+  box-shadow: 0 0 6px rgba(255, 209, 102, 0.8);
+  z-index: 1;
+}
+
+/* --- 6. Watermark des cartes projets --- */
+[data-proj-card] {
+  position: relative;
+  overflow: hidden;
+}
+[data-proj-inner] {
+  position: relative;
+}
+.proj-watermark {
+  position: absolute;
+  right: -10px;
+  bottom: -22px;
+  font-size: 7.5rem;
+  line-height: 1;
+  opacity: 0.055;
+  pointer-events: none;
+  filter: grayscale(1);
+  transform: translateZ(30px);
+}
+
+/* --- 8. Odometre (stats) --- */
+.odo {
+  display: inline-flex;
+  align-items: baseline;
+}
+.odo-col {
+  display: inline-block;
+  height: 1em;
+  overflow: hidden;
+  line-height: 1;
+}
+.odo-strip {
+  display: inline-flex;
+  flex-direction: column;
+  transform: translateY(0);
+  transition: transform 1.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.odo-strip span,
+.odo-sfx {
+  height: 1em;
+  line-height: 1;
+  background: linear-gradient(135deg, #f87171, #e08a3c);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.odo-sfx {
+  height: auto;
+}
+
+/* --- 11. Empreintes au clic --- */
+.fp-click {
+  position: fixed;
+  z-index: 499;
+}
+
+/* --- 13. Crossfade changement de langue --- */
+section,
+footer {
+  transition: opacity 0.18s ease;
+}
+.lang-fade section,
+.lang-fade footer {
+  opacity: 0;
+}
+
+/* --- 14. Intro AlpaStudio --- */
+.intro-veil {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: #08080a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: introVeil 1.4s ease forwards;
+}
+@keyframes introVeil {
+  0%,
+  72% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+.intro-inner {
+  display: flex;
+  align-items: center;
+}
+.intro-run {
+  width: 54px;
+  height: 54px;
+  color: #52b788;
+  animation: runBob 0.34s ease-in-out infinite;
+}
+.intro-name {
+  font-family: 'Space Grotesk', sans-serif;
+  font-weight: 700;
+  font-size: 1.7rem;
+  letter-spacing: 0.06em;
+  margin-left: 0.8rem;
+  overflow: hidden;
+  white-space: nowrap;
+  background: linear-gradient(100deg, #74c69d, #eef2ef 60%, #f87171);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: introName 0.8s cubic-bezier(0.16, 1, 0.3, 1) 0.15s both;
+}
+@keyframes introName {
+  from {
+    max-width: 0;
+    opacity: 0;
+  }
+  to {
+    max-width: 320px;
+    opacity: 1;
+  }
+}

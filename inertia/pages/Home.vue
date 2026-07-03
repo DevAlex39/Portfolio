@@ -143,8 +143,8 @@ const t = computed(() => DICT[lang.value])
 const F = computed(() => lang.value === 'fr')
 
 const skillsGreen = computed(() => [
-  { icon: '⚡', name: 'Vue.js / Nuxt', lvl: '65%', level: 65, training: true, desc: F.value ? 'Frontend moderne avec Vue 3, Composition API et InertiaJS.' : 'Modern frontend with Vue 3, Composition API and InertiaJS.' },
-  { icon: '🖥', name: 'AdonisJS / Node', lvl: '60%', level: 60, training: true, desc: F.value ? 'APIs robustes et applications full-stack avec AdonisJS 6.' : 'Robust APIs and full-stack apps with AdonisJS 6.' },
+  { icon: '⚡', name: 'Vue.js / Nuxt', lvl: '65%', level: 65, training: true, goal: 90, desc: F.value ? 'Frontend moderne avec Vue 3, Composition API et InertiaJS.' : 'Modern frontend with Vue 3, Composition API and InertiaJS.' },
+  { icon: '🖥', name: 'AdonisJS / Node', lvl: '60%', level: 60, training: true, goal: 85, desc: F.value ? 'APIs robustes et applications full-stack avec AdonisJS 6.' : 'Robust APIs and full-stack apps with AdonisJS 6.' },
   { icon: '🗄', name: F.value ? 'SQL / Bases de données' : 'SQL / Databases', lvl: '85%', level: 85, desc: F.value ? 'Conception, modélisation et optimisation de bases de données.' : 'Database design, modelling and optimisation.' },
   { icon: '🔧', name: 'Git', lvl: '72%', level: 72, desc: F.value ? 'Versioning, branches et travail collaboratif au quotidien.' : 'Versioning, branching and day-to-day collaborative work.' },
 ])
@@ -359,6 +359,12 @@ const projRunImgEl = ref<SVGElement | null>(null)
 const projGlowEl = ref<HTMLElement | null>(null)
 const projCounterEl = ref<HTMLElement | null>(null)
 const projBarEl = ref<HTMLElement | null>(null)
+const cursorDotEl = ref<HTMLElement | null>(null)
+const cursorRingEl = ref<HTMLElement | null>(null)
+const eduFillEl = ref<HTMLElement | null>(null)
+const proFillEl = ref<HTMLElement | null>(null)
+const introOn = ref(false)
+const langFade = ref(false)
 
 /* engine state */
 let reduce = false
@@ -374,6 +380,14 @@ let lastFootLen = -999
 let footSide = 0
 let celebrated = false
 let cpLang = 'fr'
+let mx = 0
+let my = 0
+let ringX = 0
+let ringY = 0
+let cursorRaf = 0
+let cursorCol = '#52b788'
+let langT: ReturnType<typeof setTimeout>
+let introT: ReturnType<typeof setTimeout>
 
 const sectionDefs = [
   { sel: '#accueil', fr: 'Départ', en: 'Start' },
@@ -524,6 +538,7 @@ function update(initial: boolean) {
     const x = pt.x * sx,
       py = pt.y * sy
     const col = runnerColor(p)
+    cursorCol = col
     runner.style.transform = `translate(${x - 26}px, ${py - 40}px)`
 
     const pt2 = path.getPointAtLength(Math.min(len, p * len + 8))
@@ -546,6 +561,14 @@ function update(initial: boolean) {
     }
   }
 
+  /* Timeline experiences : le trait se dessine au fil du scroll */
+  ;[eduFillEl.value, proFillEl.value].forEach((f) => {
+    if (!f || !f.parentElement) return
+    const tr = f.parentElement.getBoundingClientRect()
+    const prog = reduce ? 1 : Math.min(1, Math.max(0, (vh * 0.85 - tr.top) / tr.height))
+    f.style.transform = `scaleY(${prog.toFixed(4)})`
+  })
+
   checkpoints.forEach((cp) => {
     const reached = p >= cp.p - 0.002
     if (reached && !cp.on) {
@@ -556,7 +579,11 @@ function update(initial: boolean) {
       cp.el.style.borderColor = c
       cp.el.style.boxShadow = `0 0 12px ${c}`
       cp.label.style.color = c
-      if (!initial) cp.el.style.animation = 'cpPop .6s ease-out'
+      if (!initial) {
+        cp.el.style.animation = 'cpPop .6s ease-out'
+        dropRipple(cp, c)
+      }
+      updateFavicon(c)
       if (cp.bar) {
         cp.bar.style.boxShadow = '0 0 20px rgba(239,68,68,0.7)'
         cp.bar.style.transform = 'translateY(-50%) scaleY(1.3)'
@@ -773,7 +800,11 @@ function revealEl(el: HTMLElement) {
   el.querySelectorAll('[data-level]').forEach((b) => {
     ;(b as HTMLElement).style.width = (b as HTMLElement).getAttribute('data-level') + '%'
   })
-  el.querySelectorAll('[data-count-to]').forEach((c) => countUp(c as HTMLElement))
+  el.querySelectorAll('[data-count-to]').forEach((c) =>
+    (c as HTMLElement).hasAttribute('data-odometer')
+      ? odometer(c as HTMLElement)
+      : countUp(c as HTMLElement)
+  )
 }
 
 function countUp(el: HTMLElement) {
@@ -828,6 +859,136 @@ function bindInteractions() {
   })
 }
 
+/* --- 1. Curseur personnalise --- */
+function moveCursor(e: MouseEvent) {
+  mx = e.clientX
+  my = e.clientY
+  if (cursorDotEl.value) cursorDotEl.value.style.transform = `translate(${mx}px, ${my}px)`
+}
+function cursorLoop() {
+  ringX += (mx - ringX) * 0.16
+  ringY += (my - ringY) * 0.16
+  if (cursorRingEl.value) {
+    cursorRingEl.value.style.transform = `translate(${ringX}px, ${ringY}px)`
+    cursorRingEl.value.style.borderColor = cursorCol
+  }
+  if (cursorDotEl.value) cursorDotEl.value.style.background = cursorCol
+  cursorRaf = requestAnimationFrame(cursorLoop)
+}
+function onHoverCheck(e: MouseEvent) {
+  const t = (e.target as HTMLElement).closest?.(
+    'a, button, input, textarea, .skill-card, [data-proj-card]'
+  )
+  document.documentElement.classList.toggle('cur-hover', !!t)
+}
+
+/* --- 3. Ripple checkpoint --- */
+function dropRipple(cp: any, col: string) {
+  const trail = trailEl.value
+  if (!trail || reduce) return
+  const rp = document.createElement('span')
+  rp.className = 'cp-ripple'
+  rp.style.left = cp.el.style.left
+  rp.style.top = cp.el.style.top
+  rp.style.borderColor = col
+  trail.appendChild(rp)
+  setTimeout(() => rp.remove(), 750)
+}
+
+/* --- 11. Empreintes au clic --- */
+function clickSteps(e: MouseEvent) {
+  if (reduce) return
+  for (let k = 0; k < 2; k++) {
+    const f = document.createElement('span')
+    f.className = 'footprint fp-click'
+    f.style.left = e.clientX + (k ? 6 : -6) + 'px'
+    f.style.top = e.clientY + (k ? 10 : 2) + 'px'
+    f.style.background = cursorCol
+    f.style.boxShadow = '0 0 6px ' + cursorCol
+    f.style.animationDelay = k * 120 + 'ms'
+    document.body.appendChild(f)
+    setTimeout(() => f.remove(), 1800)
+  }
+}
+
+/* --- 12. Favicon dynamique (coureur colore selon la progression) --- */
+function updateFavicon(col: string) {
+  try {
+    const c = document.createElement('canvas')
+    c.width = 32
+    c.height = 32
+    const ctx = c.getContext('2d')
+    if (!ctx) return
+    ctx.setTransform(32 / 24, 0, 0, 32 / 24, 0, 0)
+    ctx.fillStyle = col
+    ctx.fill(new Path2D(RUNNER_PATH))
+    let link = document.querySelector('link[rel="icon"]') as HTMLLinkElement | null
+    if (!link) {
+      link = document.createElement('link')
+      link.rel = 'icon'
+      document.head.appendChild(link)
+    }
+    link.href = c.toDataURL('image/png')
+  } catch {}
+}
+
+/* --- 8. Odometre : les chiffres roulent comme un compteur mecanique --- */
+function odometer(el: HTMLElement) {
+  const to = parseFloat(el.getAttribute('data-count-to') || '')
+  const suffix = el.getAttribute('data-count-suffix') || ''
+  if (!isFinite(to)) return
+  if (el.dataset.counted) return
+  el.dataset.counted = '1'
+  if (reduce) {
+    el.textContent = to + suffix
+    return
+  }
+  el.textContent = ''
+  el.classList.add('odo')
+  String(to)
+    .split('')
+    .forEach((d, idx) => {
+      const col = document.createElement('span')
+      col.className = 'odo-col'
+      const strip = document.createElement('span')
+      strip.className = 'odo-strip'
+      for (let k = 0; k <= 9; k++) {
+        const s = document.createElement('span')
+        s.textContent = String(k)
+        strip.appendChild(s)
+      }
+      col.appendChild(strip)
+      el.appendChild(col)
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          strip.style.transitionDelay = idx * 130 + 'ms'
+          strip.style.transform = `translateY(${-parseInt(d, 10)}em)`
+        })
+      )
+    })
+  if (suffix) {
+    const sfx = document.createElement('span')
+    sfx.className = 'odo-sfx'
+    sfx.textContent = suffix
+    el.appendChild(sfx)
+  }
+}
+
+/* --- 13. Changement de langue avec fondu --- */
+function setLang(l: 'fr' | 'en') {
+  if (lang.value === l) return
+  if (reduce) {
+    lang.value = l
+    return
+  }
+  langFade.value = true
+  clearTimeout(langT)
+  langT = setTimeout(() => {
+    lang.value = l
+    nextTick(() => requestAnimationFrame(() => (langFade.value = false)))
+  }, 190)
+}
+
 function dropFoot(x: number, y: number, col: string) {
   const trail = trailEl.value
   if (!trail) return
@@ -850,6 +1011,28 @@ onMounted(() => {
   reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
   window.addEventListener('scroll', onScroll, { passive: true, capture: true })
   window.addEventListener('resize', onResize, { passive: true })
+
+  /* 14. Intro AlpaStudio — une fois par session */
+  if (!reduce && !sessionStorage.getItem('alpa_intro')) {
+    sessionStorage.setItem('alpa_intro', '1')
+    introOn.value = true
+    introT = setTimeout(() => (introOn.value = false), 1400)
+  }
+
+  /* 1. Curseur personnalise — pointeur fin uniquement */
+  const finePointer = !!(window.matchMedia && window.matchMedia('(pointer: fine)').matches)
+  if (finePointer && !reduce) {
+    document.documentElement.classList.add('has-cursor')
+    window.addEventListener('mousemove', moveCursor, { passive: true })
+    window.addEventListener('mouseover', onHoverCheck, { passive: true })
+    cursorLoop()
+  }
+
+  /* 11. Empreintes au clic */
+  window.addEventListener('click', clickSteps, { passive: true })
+
+  /* 12. Favicon initial */
+  updateFavicon('#52b788')
 
   const root = rootEl.value!
   parallax = Array.from(root.querySelectorAll('[data-parallax]')).map((el) => ({
@@ -878,10 +1061,17 @@ onMounted(() => {
 onBeforeUnmount(() => {
   window.removeEventListener('scroll', onScroll, { capture: true } as any)
   window.removeEventListener('resize', onResize)
+  window.removeEventListener('mousemove', moveCursor)
+  window.removeEventListener('mouseover', onHoverCheck)
+  window.removeEventListener('click', clickSteps)
+  document.documentElement.classList.remove('has-cursor', 'cur-hover')
+  if (cursorRaf) cancelAnimationFrame(cursorRaf)
   clearTimeout(idle)
   clearTimeout(resizeT)
   clearTimeout(celebT)
   clearTimeout(sentT)
+  clearTimeout(langT)
+  clearTimeout(introT)
 })
 
 watch(lang, () => {
@@ -907,7 +1097,19 @@ const trailPath =
 <template>
   <Head :title="lang === 'fr' ? 'Accueil' : 'Home'" />
 
-  <div ref="rootEl" style="position: relative; width: 100%; overflow-x: hidden">
+  <div ref="rootEl" :class="{ 'lang-fade': langFade }" style="position: relative; width: 100%; overflow-x: hidden">
+    <!-- Intro AlpaStudio (une fois par session) -->
+    <div v-if="introOn" class="intro-veil">
+      <div class="intro-inner">
+        <svg viewBox="0 0 24 24" class="intro-run"><path fill="currentColor" :d="RUNNER_PATH"></path></svg>
+        <span class="intro-name">AlpaStudio</span>
+      </div>
+    </div>
+
+    <!-- Curseur personnalise -->
+    <div ref="cursorDotEl" class="cursor-dot"></div>
+    <div ref="cursorRingEl" class="cursor-ring"></div>
+
     <!-- Ambient particles -->
     <div v-if="showParticles" style="position: fixed; inset: 0; pointer-events: none; z-index: 40">
       <span v-for="(p, i) in particles" :key="i" :style="p.style"></span>
@@ -959,8 +1161,8 @@ const trailPath =
           </li>
         </ul>
         <div style="display: flex; border: 1px solid rgba(255, 255, 255, 0.14); border-radius: 999px; overflow: hidden; font-family: 'JetBrains Mono', monospace; font-size: 0.72rem">
-          <button :style="frBtnStyle" @click="lang = 'fr'">FR</button>
-          <button :style="enBtnStyle" @click="lang = 'en'">EN</button>
+          <button :style="frBtnStyle" @click="setLang('fr')">FR</button>
+          <button :style="enBtnStyle" @click="setLang('en')">EN</button>
         </div>
       </div>
     </nav>
@@ -978,6 +1180,14 @@ const trailPath =
         </svg>
       </div>
       <div style="position: absolute; top: 20%; left: 0; right: 0; height: 120px; background: linear-gradient(90deg, transparent, rgba(212, 230, 241, 0.07), transparent); filter: blur(14px); animation: drift 9s ease-in-out infinite alternate"></div>
+      <!-- Aurore boreale -->
+      <div class="aurora"></div>
+      <!-- Etoiles filantes -->
+      <span class="shoot" style="top: 11%; right: 7%"></span>
+      <span class="shoot" style="top: 24%; right: 30%; animation-duration: 15s; animation-delay: -6s"></span>
+      <!-- Brouillard de vallee -->
+      <div class="fog fog-1"></div>
+      <div class="fog fog-2"></div>
       <div style="position: relative; z-index: 2; padding: 0 1.5rem; max-width: 780px">
         <p data-rv="up" data-rv-d="80" style="font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; color: #74c69d; letter-spacing: 0.32em; text-transform: uppercase; margin-bottom: 1.4rem">{{ t.heroKicker }}</p>
         <h1 aria-label="Alexis Paillot" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(3rem, 8vw, 6rem); font-weight: 700; line-height: 1.02; letter-spacing: -0.02em; margin-bottom: 1.6rem; background: linear-gradient(135deg, #eef2ef 30%, #74c69d 70%, #48cae4); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">
@@ -1017,8 +1227,9 @@ const trailPath =
                   <span :data-count-to="s.level" data-count-suffix="%" style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #74c69d">{{ s.lvl }}</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #9fb3aa; line-height: 1.6; margin-bottom: 0.9rem">{{ s.desc }}</p>
-                <div style="height: 5px; background: rgba(255, 255, 255, 0.07); border-radius: 3px; overflow: hidden">
+                <div class="skill-bar">
                   <div :data-level="s.level" style="height: 100%; width: 0; background: linear-gradient(90deg, #2d6a4f, #52b788); border-radius: 3px; transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1)"></div>
+                  <span v-if="s.goal" class="skill-goal" :style="'left:' + s.goal + '%'" :title="(F ? 'Objectif : ' : 'Goal: ') + s.goal + '%'"></span>
                 </div>
               </div>
             </div>
@@ -1038,7 +1249,7 @@ const trailPath =
                   <span :data-count-to="s.level" data-count-suffix="%" style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #f87171">{{ s.lvl }}</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #b6a3a3; line-height: 1.6; margin-bottom: 0.9rem">{{ s.desc }}</p>
-                <div style="height: 5px; background: rgba(255, 255, 255, 0.07); border-radius: 3px; overflow: hidden">
+                <div class="skill-bar">
                   <div :data-level="s.level" style="height: 100%; width: 0; background: linear-gradient(90deg, #7f1d1d, #ef4444); border-radius: 3px; transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1)"></div>
                 </div>
               </div>
@@ -1077,7 +1288,9 @@ const trailPath =
           <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9fdbe8">{{ t.xpEduTitle }}</h3>
         </div>
         <div style="position: relative; padding-left: 2.4rem; margin-bottom: 1.5rem">
-          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, #48cae4, #52b788)"></div>
+          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: rgba(255, 255, 255, 0.08)">
+            <div ref="eduFillEl" class="tl-fill" style="background: linear-gradient(180deg, #48cae4, #52b788)"></div>
+          </div>
           <div v-for="(xp, i) in education" :key="'edu' + i" data-rv="left" data-rv-stagger style="position: relative; padding-bottom: 2.4rem">
             <span :style="'position:absolute; left:-2.4rem; top:4px; width:16px; height:16px; border-radius:50%; border:3px solid #12101a; ' + xp.dotStyle"></span>
             <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #7bd0e8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem">{{ xp.date }}</p>
@@ -1096,7 +1309,9 @@ const trailPath =
           <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #e0a05c">{{ t.xpProTitle }}</h3>
         </div>
         <div style="position: relative; padding-left: 2.4rem">
-          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, #e08a3c, #ef4444)"></div>
+          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: rgba(255, 255, 255, 0.08)">
+            <div ref="proFillEl" class="tl-fill" style="background: linear-gradient(180deg, #e08a3c, #ef4444)"></div>
+          </div>
           <div v-for="(xp, i) in workXp" :key="'pro' + i" data-rv="right" data-rv-stagger style="position: relative; padding-bottom: 2.4rem">
             <span :style="'position:absolute; left:-2.4rem; top:4px; width:16px; height:16px; border-radius:50%; border:3px solid #12101a; ' + xp.dotStyle"></span>
             <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #e0a05c; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem">{{ xp.date }}</p>
@@ -1125,6 +1340,9 @@ const trailPath =
             <path ref="projMountPathEl" d="M0,210 L120,120 L210,180 L330,60 L450,170 L560,80 L690,175 L820,70 L1000,150" fill="none" stroke="url(#trailGrad)" stroke-width="2.4" stroke-dasharray="2 9" stroke-linecap="round" opacity="0.5"></path>
           </svg>
         </div>
+
+        <!-- Brouillard de vallee -->
+        <div class="fog fog-1" style="z-index: 1"></div>
 
         <!-- Mountain runner -->
         <div ref="projRunnerEl" class="runWrap proj-runner" style="position: absolute; left: 0; top: 0; width: 46px; height: 46px; z-index: 2; opacity: 0; will-change: transform; transition: opacity 0.4s">
@@ -1160,6 +1378,7 @@ const trailPath =
 
           <article v-for="(pj, i) in projects" :key="i" data-proj-card style="flex: 0 0 auto; width: clamp(310px, 42vw, 540px); align-self: center; background: linear-gradient(160deg, rgba(82, 183, 136, 0.08), rgba(72, 202, 228, 0.04) 55%, rgba(255, 255, 255, 0.02)); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 20px; padding: clamp(1.5rem, 3vw, 2.6rem); box-shadow: 0 22px 60px rgba(0, 0, 0, 0.45); transition: opacity 0.45s cubic-bezier(0.16, 1, 0.3, 1), transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.45s">
             <div data-proj-inner style="transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1)">
+              <span class="proj-watermark" aria-hidden="true">{{ pj.icon }}</span>
               <div style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.3rem">
                 <span style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.4rem, 5vw, 3.6rem); font-weight: 700; line-height: 1; color: #4c6f61">{{ pj.num }}</span>
                 <span style="display: inline-flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.9rem; border-radius: 999px; background: rgba(72, 202, 228, 0.1); border: 1px solid rgba(72, 202, 228, 0.28); font-family: 'JetBrains Mono', monospace; font-size: 0.7rem; letter-spacing: 0.08em; text-transform: uppercase; color: #9fdbe8; white-space: nowrap"><span style="font-size: 1rem">{{ pj.icon }}</span>{{ pj.domain }}</span>
@@ -1199,7 +1418,7 @@ const trailPath =
           </div>
           <div data-rv="right" style="display: flex; flex-direction: column; gap: 1rem">
             <div v-for="(st, i) in stats" :key="i" style="display: flex; align-items: center; gap: 1.2rem; padding: 1.4rem 1.5rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 14px">
-              <span :data-count-to="st.count" :data-count-suffix="st.suffix" style="font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; min-width: 4rem; background: linear-gradient(135deg, #f87171, #e08a3c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">{{ st.value }}</span>
+              <span :data-count-to="st.count" :data-count-suffix="st.suffix" data-odometer style="font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; min-width: 4rem; background: linear-gradient(135deg, #f87171, #e08a3c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">{{ st.value }}</span>
               <span style="font-size: 0.9rem; color: #b6a3a3; line-height: 1.4">{{ st.label }}</span>
             </div>
           </div>
@@ -1286,9 +1505,11 @@ const trailPath =
           </div>
           <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.7rem, 3.4vw, 2.6rem); font-weight: 700; margin-top: 1.4rem; letter-spacing: -0.01em; background: linear-gradient(135deg, #f87171, #e08a3c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">{{ t.finishDone }}</h3>
           <p style="color: #a9b6af; margin-top: 0.45rem; font-size: 0.96rem">{{ t.finishSub }}</p>
-          <div v-if="rank != null" style="margin-top: 1.3rem; display: inline-flex; align-items: center; gap: 0.65rem; padding: 0.6rem 1.5rem; background: linear-gradient(135deg, rgba(82, 183, 136, 0.16), rgba(239, 68, 68, 0.16)); border: 1px solid rgba(255, 255, 255, 0.18); border-radius: 999px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35)">
-            <span style="font-size: 1.35rem">🏅</span>
-            <span style="font-family: 'Space Grotesk', sans-serif; font-weight: 600; font-size: 1.05rem; color: #eef2ef">{{ rankText }}</span>
+          <div v-if="rank != null" class="bib-card">
+            <div class="bib-pins"><span></span><span></span></div>
+            <span class="bib-top">AlpaStudio Trail</span>
+            <span class="bib-num">{{ rank }}</span>
+            <span class="bib-text">{{ rankText }}</span>
           </div>
         </div>
       </div>
