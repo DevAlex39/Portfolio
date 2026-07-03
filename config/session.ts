@@ -20,7 +20,7 @@ const sessionConfig = defineConfig({
 
   /**
    * Configuration for session cookie and the
-   * cookie store
+   * cookie store.
    */
   cookie: {
     path: '/',

@@ -1,0 +1,16 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "types": ["vite/client"],
+    "paths": {
+      "~/*": ["./*"]
+    }
+  },
+  "include": ["./**/*.ts", "./**/*.vue"],
+  "exclude": ["../node_modules"]
+}

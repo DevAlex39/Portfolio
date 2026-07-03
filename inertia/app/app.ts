@@ -1,16 +1,27 @@
+/// <reference path="../../adonisrc.ts" />
+/// <reference path="../../config/inertia.ts" />
+
 import '../css/app.css'
+
 import { createApp, h } from 'vue'
 import type { DefineComponent } from 'vue'
 import { createInertiaApp } from '@inertiajs/vue3'
+import { resolvePageComponent } from '@adonisjs/inertia/helpers'
 
-const pages = import.meta.glob<DefineComponent>('../pages/**/*.vue')
+const appName = import.meta.env.VITE_APP_NAME || 'AlpaStudio'
 
 createInertiaApp({
+  progress: { color: '#52b788' },
+
+  title: (title) => (title ? `${title} — ${appName}` : appName),
+
   resolve: (name) => {
-    const page = pages[`../pages/${name}.vue`]
-    if (!page) throw new Error(`Page not found: ${name}`)
-    return page()
+    return resolvePageComponent(
+      `../pages/${name}.vue`,
+      import.meta.glob<DefineComponent>('../pages/**/*.vue')
+    )
   },
+
   setup({ el, App, props, plugin }) {
     createApp({ render: () => h(App, props) })
       .use(plugin)
