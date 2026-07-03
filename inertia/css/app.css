@@ -138,6 +138,12 @@ section a[data-magnetic]:hover {
   opacity: 0;
   will-change: transform, opacity;
   animation: letterUp 0.62s cubic-bezier(0.16, 1, 0.3, 1) both;
+  /* Chrome ne peint pas le background-clip:text du parent quand les lettres
+     sont composées (will-change/animation) — le dégradé doit vivre ici. */
+  background: linear-gradient(135deg, #eef2ef 30%, #74c69d 70%, #48cae4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 [data-proj-inner] {
