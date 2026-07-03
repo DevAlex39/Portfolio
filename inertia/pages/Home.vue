@@ -380,6 +380,7 @@ let lastFootLen = -999
 let footSide = 0
 let celebrated = false
 let cpLang = 'fr'
+let lastDustX = -999
 let mx = 0
 let my = 0
 let ringX = 0
@@ -480,10 +481,14 @@ function buildCheckpoints() {
 }
 
 function onScroll() {
-  if (runnerEl.value && !reduce) {
-    runnerEl.value.classList.add('running')
+  if (!reduce) {
+    runnerEl.value && runnerEl.value.classList.add('running')
+    projRunnerEl.value && projRunnerEl.value.classList.add('running')
     clearTimeout(idle)
-    idle = setTimeout(() => runnerEl.value && runnerEl.value.classList.remove('running'), 220)
+    idle = setTimeout(() => {
+      runnerEl.value && runnerEl.value.classList.remove('running')
+      projRunnerEl.value && projRunnerEl.value.classList.remove('running')
+    }, 220)
   }
   if (raf) cancelAnimationFrame(raf)
   raf = requestAnimationFrame(() => update(false))
@@ -700,6 +705,7 @@ function updateProjects(vh: number, p: number) {
   }
   const inSection = local >= 0 && local <= scrollRange
   const eExit = exit * exit * (3 - 2 * exit)
+  const eEntry = entry * entry * (3 - 2 * entry)
 
   const mountPath = projMountPathEl.value
   const mt = mountPath ? (mountPath.closest('.proj-mountains') as HTMLElement | null) : null
@@ -721,12 +727,16 @@ function updateProjects(vh: number, p: number) {
       y: tr.top + ptv.y * (trail.clientHeight / 1000),
     }
   }
-  const C = { x: Rm.x + (Cv.x - Rm.x) * eExit, y: Rm.y + (Cv.y - Rm.y) * eExit }
-  const handover = eExit < 0.85 ? 0 : (eExit - 0.85) / 0.15
+  /* Position du coureur des cretes : interpolee vers le fil conducteur
+     a l'entree ET a la sortie pour une passation sans a-coup */
+  const blend = Math.max(eExit, eEntry)
+  const C = { x: Rm.x + (Cv.x - Rm.x) * blend, y: Rm.y + (Cv.y - Rm.y) * blend }
+  let handover = eExit < 0.7 ? 0 : (eExit - 0.7) / 0.3
+  handover = handover * handover * (3 - 2 * handover)
 
   let trailVis: number
   if (!inSection) trailVis = 1
-  else if (pp < 0.12) trailVis = entry
+  else if (pp < 0.12) trailVis = eEntry
   else if (pp > 0.8) trailVis = eExit
   else trailVis = 0
   if (trail) {
@@ -737,7 +747,7 @@ function updateProjects(vh: number, p: number) {
   if (runnerEl.value) {
     let vv: number
     if (!inSection) vv = 1
-    else if (pp < 0.12) vv = entry
+    else if (pp < 0.12) vv = eEntry
     else if (pp > 0.8) vv = handover
     else vv = 0
     runnerEl.value.style.opacity = vv.toFixed(3)
@@ -746,11 +756,11 @@ function updateProjects(vh: number, p: number) {
   if (projRunnerEl.value && mountPath) {
     let mvis: number
     if (!inSection) mvis = 0
-    else if (pp < 0.12) mvis = 1 - entry
+    else if (pp < 0.12) mvis = 1 - eEntry
     else if (pp > 0.8) mvis = 1 - handover
     else mvis = 1
     projRunnerEl.value.style.opacity = mvis.toFixed(3)
-    projRunnerEl.value.style.transform = `translate(${C.x - 23}px, ${C.y - 23}px)`
+    projRunnerEl.value.style.transform = `translate(${C.x - 26}px, ${C.y - 40}px)`
     const pt2 = mountPath.getPointAtLength(Math.min(len, pp * len + 8))
     const dx = pt2.x - ridgePt.x,
       dy = pt2.y - ridgePt.y
@@ -763,6 +773,12 @@ function updateProjects(vh: number, p: number) {
     const col = runnerColor(0.15 + pp * 0.2)
     if (projRunImgEl.value) projRunImgEl.value.style.color = col
     if (projGlowEl.value) projGlowEl.value.style.background = col
+
+    /* Poussiere soulevee par la foulee sur la crete */
+    if (!reduce && pinned && mvis > 0.5 && Math.abs(C.x - lastDustX) > 26) {
+      lastDustX = C.x
+      dropDust(C.x, C.y + 18, col)
+    }
   }
 
   const N = projects.value.length || 6
@@ -880,6 +896,19 @@ function onHoverCheck(e: MouseEvent) {
     'a, button, input, textarea, .skill-card, [data-proj-card]'
   )
   document.documentElement.classList.toggle('cur-hover', !!t)
+}
+
+/* --- Poussiere du coureur des cretes --- */
+function dropDust(x: number, y: number, col: string) {
+  const host = projStickyEl.value
+  if (!host) return
+  const d = document.createElement('span')
+  d.className = 'dust'
+  d.style.left = x + 'px'
+  d.style.top = y + 'px'
+  d.style.background = col
+  host.appendChild(d)
+  setTimeout(() => d.remove(), 950)
 }
 
 /* --- 3. Ripple checkpoint --- */
@@ -1173,10 +1202,34 @@ const trailPath =
         <div style="position: absolute; top: 14%; left: 18%; width: 380px; height: 380px; border-radius: 50%; background: radial-gradient(circle, rgba(82, 183, 136, 0.22), transparent 70%); filter: blur(8px)"></div>
         <div style="position: absolute; top: 8%; right: 14%; width: 260px; height: 260px; border-radius: 50%; background: radial-gradient(circle, rgba(72, 202, 228, 0.18), transparent 70%); filter: blur(6px)"></div>
       </div>
-      <div data-parallax data-speed="-0.12" style="position: absolute; bottom: -2px; left: 0; right: 0; height: 42vh; opacity: 0.9">
-        <svg viewBox="0 0 1440 400" preserveAspectRatio="none" style="position: absolute; bottom: 0; width: 100%; height: 100%">
-          <path d="M0,400 L0,250 L240,90 L430,210 L640,60 L860,200 L1080,70 L1280,190 L1440,120 L1440,400 Z" fill="#06140f"></path>
-          <path d="M0,400 L0,300 L200,200 L420,300 L600,170 L820,290 L1040,180 L1260,300 L1440,230 L1440,400 Z" fill="#0a241b" opacity="0.92"></path>
+      <div data-parallax data-speed="-0.12" style="position: absolute; bottom: -2px; left: 0; right: 0; height: 60vh; opacity: 0.95">
+        <svg viewBox="0 0 1440 560" preserveAspectRatio="none" style="position: absolute; left: 0; bottom: 0; width: 100%; height: 100%">
+          <defs>
+            <linearGradient id="lakeGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="#123a4c"></stop>
+              <stop offset="1" stop-color="#081720"></stop>
+            </linearGradient>
+            <linearGradient id="wfGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stop-color="rgba(212,237,244,0.35)"></stop>
+              <stop offset="1" stop-color="rgba(72,202,228,0.12)"></stop>
+            </linearGradient>
+          </defs>
+          <!-- Chaine lointaine -->
+          <path d="M0,560 L0,240 L160,160 L360,280 L560,140 L760,270 L980,150 L1200,270 L1440,190 L1440,560 Z" fill="#1a5c42" opacity="0.34"></path>
+          <!-- Chaine intermediaire -->
+          <path d="M0,560 L0,330 L190,235 L430,370 L640,220 L860,360 L1080,230 L1280,350 L1440,280 L1440,560 Z" fill="#0c3123" opacity="0.85"></path>
+          <!-- Chaine proche avec falaise -->
+          <path d="M0,560 L0,400 L170,320 L420,460 L600,330 L820,470 L920,400 L1008,400 L1075,340 L1260,460 L1440,390 L1440,560 Z" fill="#123528"></path>
+          <!-- Cascade depuis la falaise -->
+          <rect x="956" y="400" width="16" height="108" rx="5" fill="url(#wfGrad)" opacity="0.85"></rect>
+          <line class="wfall" x1="961" y1="402" x2="961" y2="506" stroke="rgba(238,242,239,0.5)" stroke-width="2.5" stroke-linecap="round"></line>
+          <line class="wfall" x1="968" y1="406" x2="968" y2="506" stroke="rgba(163,216,244,0.4)" stroke-width="2" stroke-linecap="round" style="animation-delay: -0.5s"></line>
+          <!-- Lac -->
+          <rect x="0" y="500" width="1440" height="60" fill="url(#lakeGrad)"></rect>
+          <ellipse class="wfoam" cx="964" cy="504" rx="30" ry="6" fill="rgba(212,237,244,0.22)"></ellipse>
+          <line class="lake-glint" x1="200" y1="522" x2="420" y2="522" stroke="rgba(72,202,228,0.16)" stroke-width="2" stroke-linecap="round"></line>
+          <line class="lake-glint" x1="620" y1="532" x2="800" y2="532" stroke="rgba(72,202,228,0.13)" stroke-width="2" stroke-linecap="round" style="animation-delay: -2s"></line>
+          <line class="lake-glint" x1="1000" y1="524" x2="1230" y2="524" stroke="rgba(72,202,228,0.15)" stroke-width="2" stroke-linecap="round" style="animation-delay: -4s"></line>
         </svg>
       </div>
       <div style="position: absolute; top: 20%; left: 0; right: 0; height: 120px; background: linear-gradient(90deg, transparent, rgba(212, 230, 241, 0.07), transparent); filter: blur(14px); animation: drift 9s ease-in-out infinite alternate"></div>
@@ -1345,8 +1398,8 @@ const trailPath =
         <div class="fog fog-1" style="z-index: 1"></div>
 
         <!-- Mountain runner -->
-        <div ref="projRunnerEl" class="runWrap proj-runner" style="position: absolute; left: 0; top: 0; width: 46px; height: 46px; z-index: 2; opacity: 0; will-change: transform; transition: opacity 0.4s">
-          <span ref="projGlowEl" style="position: absolute; left: 50%; bottom: 1px; width: 30px; height: 9px; transform: translateX(-50%); border-radius: 50%; background: rgba(82, 183, 136, 0.5); filter: blur(5px)"></span>
+        <div ref="projRunnerEl" class="runWrap proj-runner" style="position: absolute; left: 0; top: 0; width: 52px; height: 52px; z-index: 2; opacity: 0; will-change: transform">
+          <span ref="projGlowEl" style="position: absolute; left: 50%; bottom: 2px; width: 36px; height: 10px; transform: translateX(-50%); border-radius: 50%; background: rgba(82, 183, 136, 0.5); filter: blur(5px)"></span>
           <div class="bob" style="width: 100%; height: 100%">
             <svg ref="projRunImgEl" viewBox="0 0 24 24" style="width: 100%; height: 100%; display: block; color: #52b788; transform-origin: 50% 62%; transition: color 0.25s linear; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5))">
               <path fill="currentColor" :d="RUNNER_PATH"></path>

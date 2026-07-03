@@ -928,3 +928,57 @@ footer {
     opacity: 1;
   }
 }
+
+/* --- Paysage hero : cascade, lac --- */
+.wfall {
+  stroke-dasharray: 7 11;
+  animation: waterFall 1s linear infinite;
+}
+@keyframes waterFall {
+  to {
+    stroke-dashoffset: -18;
+  }
+}
+.lake-glint {
+  animation: glint 6s ease-in-out infinite;
+}
+@keyframes glint {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+.wfoam {
+  animation: foamPulse 2.2s ease-in-out infinite;
+}
+@keyframes foamPulse {
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+/* --- Poussiere du coureur des cretes (section projets) --- */
+.dust {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  opacity: 0.5;
+  pointer-events: none;
+  filter: blur(1px);
+  animation: dustFade 0.85s ease-out forwards;
+  z-index: 2;
+}
+@keyframes dustFade {
+  to {
+    transform: translate(-8px, -11px) scale(1.9);
+    opacity: 0;
+  }
+}
