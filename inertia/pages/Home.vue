@@ -39,6 +39,15 @@ const particles = (() => {
   })
 })()
 
+/* Etoiles du ciel nocturne (section projets) */
+const projStars = (() =>
+  Array.from({ length: 26 }, () => {
+    const sz = (1 + Math.random() * 2).toFixed(1)
+    return {
+      style: `position:absolute; left:${(Math.random() * 100).toFixed(1)}%; top:${(Math.random() * 100).toFixed(1)}%; width:${sz}px; height:${sz}px; border-radius:50%; background:#dfe9f0; box-shadow:0 0 ${(2 + Math.random() * 4).toFixed(0)}px rgba(223,233,240,0.8); animation: pulseGlow ${(2 + Math.random() * 3).toFixed(1)}s ease-in-out ${(Math.random() * 3).toFixed(1)}s infinite;`,
+    }
+  }))()
+
 /* --------------------------------------------------------------------------
  * Localised content
  * ------------------------------------------------------------------------ */
@@ -68,6 +77,7 @@ const DICT = {
     xpTitle: 'Expériences',
     xpEduTitle: 'Parcours scolaire',
     xpProTitle: 'Expériences professionnelles',
+    interludeKicker: 'Cap sur les crêtes',
     contactLabel: 'Travaillons ensemble',
     contactTitle: 'Contact',
     contactIntro:
@@ -115,6 +125,7 @@ const DICT = {
     xpTitle: 'Experience',
     xpEduTitle: 'Education',
     xpProTitle: 'Work experience',
+    interludeKicker: 'Heading for the ridges',
     contactLabel: "Let\u2019s work together",
     contactTitle: 'Contact',
     contactIntro:
@@ -361,6 +372,17 @@ const projCounterEl = ref<HTMLElement | null>(null)
 const projBarEl = ref<HTMLElement | null>(null)
 const cursorDotEl = ref<HTMLElement | null>(null)
 const cursorRingEl = ref<HTMLElement | null>(null)
+const interludeEl = ref<HTMLElement | null>(null)
+const interPathEl = ref<SVGPathElement | null>(null)
+const interRunnerEl = ref<HTMLElement | null>(null)
+const interRunImgEl = ref<SVGElement | null>(null)
+const interGlowEl = ref<HTMLElement | null>(null)
+const projDayEl = ref<HTMLElement | null>(null)
+const projSunsetEl = ref<HTMLElement | null>(null)
+const projNightEl = ref<HTMLElement | null>(null)
+const projSunEl = ref<HTMLElement | null>(null)
+const projMoonEl = ref<HTMLElement | null>(null)
+const projStarsEl = ref<HTMLElement | null>(null)
 const eduFillEl = ref<HTMLElement | null>(null)
 const proFillEl = ref<HTMLElement | null>(null)
 const introOn = ref(false)
@@ -381,6 +403,7 @@ let footSide = 0
 let celebrated = false
 let cpLang = 'fr'
 let lastDustX = -999
+let interVis = 1
 let mx = 0
 let my = 0
 let ringX = 0
@@ -484,10 +507,12 @@ function onScroll() {
   if (!reduce) {
     runnerEl.value && runnerEl.value.classList.add('running')
     projRunnerEl.value && projRunnerEl.value.classList.add('running')
+    interRunnerEl.value && interRunnerEl.value.classList.add('running')
     clearTimeout(idle)
     idle = setTimeout(() => {
       runnerEl.value && runnerEl.value.classList.remove('running')
       projRunnerEl.value && projRunnerEl.value.classList.remove('running')
+      interRunnerEl.value && interRunnerEl.value.classList.remove('running')
     }, 220)
   }
   if (raf) cancelAnimationFrame(raf)
@@ -505,6 +530,7 @@ function update(initial: boolean) {
 
   parallax.forEach((q) => (q.el.style.transform = `translateY(${y * q.speed}px)`))
 
+  if (!reduce) updateInterlude(vh)
   if (!reduce) updateProjects(vh, p)
 
   if (reveals.length) {
@@ -666,6 +692,45 @@ function celebrate() {
   celebT = setTimeout(() => el && el.classList.remove('celebrate'), 1500)
 }
 
+/* Interlude : le coureur quitte le fil conducteur et traverse l'ecran
+   (riviere + pont) pour rejoindre le pied des cretes */
+function updateInterlude(vh: number) {
+  const sec = interludeEl.value,
+    ipath = interPathEl.value,
+    irun = interRunnerEl.value
+  interVis = 1
+  if (!sec || !ipath || !irun) return
+  const r = sec.getBoundingClientRect()
+  if (r.top >= vh || r.bottom <= 0) {
+    irun.style.opacity = '0'
+    return
+  }
+  const prog = Math.min(1, Math.max(0, (vh * 0.7 - r.top) / (r.height - vh * 0.3)))
+  interVis = prog < 0.15 ? 1 - prog / 0.15 : 0
+  const len = ipath.getTotalLength()
+  const pt = ipath.getPointAtLength(prog * len)
+  const sx = sec.clientWidth / 1000,
+    sy = sec.clientHeight / 650
+  const x = pt.x * sx,
+    y = pt.y * sy
+  irun.style.transform = `translate(${x - 26}px, ${y - 40}px)`
+  const pt2 = ipath.getPointAtLength(Math.min(len, prog * len + 8))
+  const dx = (pt2.x - pt.x) * sx,
+    dy = (pt2.y - pt.y) * sy
+  if (interRunImgEl.value && (Math.abs(dx) > 0.001 || Math.abs(dy) > 0.001)) {
+    const face = dx >= 0 ? 1 : -1
+    let lean = (Math.atan2(dx, Math.max(0.01, dy)) * 180) / Math.PI
+    lean = Math.max(-28, Math.min(28, lean))
+    interRunImgEl.value.style.transform = `scaleX(${face}) rotate(${face === -1 ? -lean : lean}deg)`
+    const col = runnerColor(0.28 + prog * 0.1)
+    interRunImgEl.value.style.color = col
+    if (interGlowEl.value) interGlowEl.value.style.background = col
+  }
+  const opIn = Math.min(1, prog / 0.08)
+  const opOut = prog > 0.9 ? Math.max(0, (1 - prog) / 0.1) : 1
+  irun.style.opacity = (prog <= 0 ? 0 : Math.min(opIn, opOut)).toFixed(3)
+}
+
 function updateProjects(vh: number, p: number) {
   const sec = projSectionEl.value,
     track = projTrackEl.value,
@@ -705,7 +770,7 @@ function updateProjects(vh: number, p: number) {
   }
   const inSection = local >= 0 && local <= scrollRange
   const eExit = exit * exit * (3 - 2 * exit)
-  const eEntry = entry * entry * (3 - 2 * entry)
+  void entry
 
   const mountPath = projMountPathEl.value
   const mt = mountPath ? (mountPath.closest('.proj-mountains') as HTMLElement | null) : null
@@ -728,17 +793,16 @@ function updateProjects(vh: number, p: number) {
     }
   }
   /* Position du coureur des cretes : interpolee vers le fil conducteur
-     a l'entree ET a la sortie pour une passation sans a-coup */
-  const blend = Math.max(eExit, eEntry)
-  const C = { x: Rm.x + (Cv.x - Rm.x) * blend, y: Rm.y + (Cv.y - Rm.y) * blend }
+     a la sortie (a l'entree il arrive de l'interlude, au pied des cretes) */
+  const C = { x: Rm.x + (Cv.x - Rm.x) * eExit, y: Rm.y + (Cv.y - Rm.y) * eExit }
   let handover = eExit < 0.7 ? 0 : (eExit - 0.7) / 0.3
   handover = handover * handover * (3 - 2 * handover)
 
   let trailVis: number
   if (!inSection) trailVis = 1
-  else if (pp < 0.12) trailVis = eEntry
   else if (pp > 0.8) trailVis = eExit
   else trailVis = 0
+  trailVis = Math.min(trailVis, interVis)
   if (trail) {
     trail.style.opacity = trailVis.toFixed(3)
     trail.style.clipPath = 'none'
@@ -747,18 +811,16 @@ function updateProjects(vh: number, p: number) {
   if (runnerEl.value) {
     let vv: number
     if (!inSection) vv = 1
-    else if (pp < 0.12) vv = eEntry
     else if (pp > 0.8) vv = handover
     else vv = 0
-    runnerEl.value.style.opacity = vv.toFixed(3)
+    runnerEl.value.style.opacity = Math.min(vv, interVis).toFixed(3)
   }
 
+  let mvis: number
+  if (!inSection) mvis = local < 0 && rect.top < vh ? 1 : 0
+  else if (pp > 0.8) mvis = 1 - handover
+  else mvis = 1
   if (projRunnerEl.value && mountPath) {
-    let mvis: number
-    if (!inSection) mvis = 0
-    else if (pp < 0.12) mvis = 1 - eEntry
-    else if (pp > 0.8) mvis = 1 - handover
-    else mvis = 1
     projRunnerEl.value.style.opacity = mvis.toFixed(3)
     projRunnerEl.value.style.transform = `translate(${C.x - 26}px, ${C.y - 40}px)`
     const pt2 = mountPath.getPointAtLength(Math.min(len, pp * len + 8))
@@ -788,6 +850,28 @@ function updateProjects(vh: number, p: number) {
     projCounterEl.value.textContent = pad(active) + ' / ' + pad(N)
   }
   if (projBarEl.value) projBarEl.value.style.width = (pp * 100).toFixed(1) + '%'
+
+  /* Cycle jour / nuit sur la traversee des cretes :
+     le soleil monte, redescend derriere les sommets, puis lune + etoiles */
+  const dayF = inSection ? Math.max(0, 1 - Math.abs(pp - 0.22) / 0.3) : 0
+  const sunsetF = inSection ? Math.max(0, 1 - Math.abs(pp - 0.62) / 0.22) : 0
+  const nightF = inSection ? Math.min(1, Math.max(0, (pp - 0.68) / 0.24)) : 0
+  if (projDayEl.value) projDayEl.value.style.opacity = (dayF * 0.55).toFixed(3)
+  if (projSunsetEl.value) projSunsetEl.value.style.opacity = (sunsetF * 0.75).toFixed(3)
+  if (projNightEl.value) projNightEl.value.style.opacity = (nightF * 0.8).toFixed(3)
+  if (projSunEl.value) {
+    const sunX = vw * (0.16 + 0.6 * pp)
+    const sunY = vh * (0.14 + 0.78 * pp * pp)
+    projSunEl.value.style.transform = `translate(${sunX}px, ${sunY}px)`
+    const sunOp = pp < 0.7 ? 1 : Math.max(0, 1 - (pp - 0.7) / 0.08)
+    projSunEl.value.style.opacity = (inSection ? sunOp * 0.95 : 0).toFixed(3)
+  }
+  if (projMoonEl.value) {
+    const moonY = vh * (0.5 - 0.34 * nightF)
+    projMoonEl.value.style.transform = `translate(${vw * 0.76}px, ${moonY}px)`
+    projMoonEl.value.style.opacity = nightF.toFixed(3)
+  }
+  if (projStarsEl.value) projStarsEl.value.style.opacity = nightF.toFixed(3)
 
   if (near) {
     const cards = track.querySelectorAll('[data-proj-card]')
@@ -1376,9 +1460,52 @@ const trailPath =
       </div>
     </section>
 
+    <!-- Interlude : le sentier devie a travers l'ecran, riviere + pont -->
+    <section id="interlude" ref="interludeEl" aria-hidden="true" style="position: relative; height: 130vh; background: linear-gradient(180deg, #1a0f15 0%, #131720 45%, #0c1a23 100%); overflow: hidden">
+      <svg viewBox="0 0 1000 650" preserveAspectRatio="none" style="position: absolute; left: 0; top: 0; width: 100%; height: 100%">
+        <defs>
+          <linearGradient id="riverGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#123a4c"></stop>
+            <stop offset="1" stop-color="#0a2430"></stop>
+          </linearGradient>
+        </defs>
+        <!-- Collines -->
+        <path d="M0,650 L0,540 L180,470 L300,430 L400,430 L520,480 L700,555 L880,490 L1000,530 L1000,650 Z" fill="#0d2a1f" opacity="0.7"></path>
+        <!-- Riviere qui descend des collines -->
+        <path d="M318,650 C330,560 336,500 326,445 L374,445 C366,500 372,560 386,650 Z" fill="url(#riverGrad)" opacity="0.9"></path>
+        <path class="wfall" d="M349,455 C343,520 347,580 356,645" fill="none" stroke="rgba(163,216,244,0.35)" stroke-width="2.5" stroke-linecap="round"></path>
+        <!-- Sentier : du fil conducteur (haut droite) au pied des cretes (bas gauche) -->
+        <path ref="interPathEl" d="M950,10 C830,120 640,150 560,230 C480,310 470,380 452,470 C410,444 330,444 285,470 C200,500 90,540 30,635" fill="none" stroke="url(#trailGrad)" stroke-width="2.6" stroke-dasharray="2 9" stroke-linecap="round" opacity="0.55"></path>
+        <!-- Pont -->
+        <path d="M262,486 C310,442 400,442 448,486" fill="none" stroke="#7a4a2b" stroke-width="9" stroke-linecap="round"></path>
+        <path d="M262,486 C310,442 400,442 448,486" fill="none" stroke="#2b1a10" stroke-width="9" stroke-linecap="round" stroke-dasharray="3 15"></path>
+        <line x1="278" y1="478" x2="278" y2="512" stroke="#5d3820" stroke-width="6"></line>
+        <line x1="432" y1="478" x2="432" y2="512" stroke="#5d3820" stroke-width="6"></line>
+      </svg>
+      <p style="position: absolute; top: 12%; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 0.3em; text-transform: uppercase; color: #74c69d; opacity: 0.8; white-space: nowrap">{{ t.interludeKicker }}</p>
+      <div ref="interRunnerEl" class="runWrap" style="position: absolute; left: 0; top: 0; width: 52px; height: 52px; opacity: 0; will-change: transform; z-index: 2">
+        <span ref="interGlowEl" style="position: absolute; left: 50%; bottom: 2px; width: 36px; height: 10px; transform: translateX(-50%); border-radius: 50%; background: rgba(82, 183, 136, 0.5); filter: blur(5px)"></span>
+        <div class="bob" style="width: 100%; height: 100%">
+          <svg ref="interRunImgEl" viewBox="0 0 24 24" style="width: 100%; height: 100%; display: block; color: #52b788; transform-origin: 50% 62%; transition: transform 0.16s ease-out, color 0.25s linear; filter: drop-shadow(0 4px 5px rgba(0, 0, 0, 0.5))">
+            <path fill="currentColor" :d="RUNNER_PATH"></path>
+          </svg>
+        </div>
+      </div>
+    </section>
+
     <!-- Projets (scroll horizontal épinglé) -->
     <section id="projets" data-screen-label="Projets" ref="projSectionEl" class="proj-section" style="position: relative; background: linear-gradient(180deg, #1a0f15 0%, #0c1a23 34%, #0a1c18 70%, #1a0f15 100%)">
       <div ref="projStickyEl" class="proj-sticky" style="position: absolute; top: 0; left: 0; right: 0; height: 100vh; overflow: hidden">
+        <!-- Ciel : cycle jour / nuit -->
+        <div ref="projDayEl" style="position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(140, 200, 255, 0.2), rgba(255, 241, 181, 0.12) 55%, transparent 80%)"></div>
+        <div ref="projSunsetEl" style="position: absolute; inset: 0; pointer-events: none; opacity: 0; background: linear-gradient(180deg, rgba(30, 20, 60, 0.15) 20%, rgba(255, 122, 61, 0.2) 62%, rgba(255, 170, 80, 0.3) 100%)"></div>
+        <div ref="projSunEl" style="position: absolute; left: -45px; top: -45px; width: 90px; height: 90px; border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform; background: radial-gradient(circle, rgba(255, 228, 140, 0.95) 30%, rgba(255, 180, 84, 0.5) 55%, transparent 72%)"></div>
+        <div ref="projMoonEl" style="position: absolute; left: -28px; top: -28px; width: 56px; height: 56px; border-radius: 50%; pointer-events: none; opacity: 0; will-change: transform; box-shadow: inset -12px 8px 0 2px #dbe7ef; filter: drop-shadow(0 0 12px rgba(219, 231, 239, 0.45))"></div>
+        <div ref="projStarsEl" style="position: absolute; left: 0; top: 0; right: 0; height: 55%; pointer-events: none; opacity: 0">
+          <span v-for="(s, i) in projStars" :key="i" :style="s.style"></span>
+        </div>
+        <div ref="projNightEl" style="position: absolute; inset: 0; pointer-events: none; opacity: 0; z-index: 3; background: linear-gradient(180deg, rgba(4, 8, 26, 0.7), rgba(8, 14, 36, 0.45) 55%, rgba(12, 18, 44, 0.2))"></div>
+
         <!-- Back mountain layer -->
         <div ref="projBackEl" class="proj-back" style="position: absolute; left: 0; bottom: 0; width: 130%; height: 56%; pointer-events: none; opacity: 0.45; z-index: 0; will-change: transform">
           <svg viewBox="0 0 1400 400" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%">
