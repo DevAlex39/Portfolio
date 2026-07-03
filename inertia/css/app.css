@@ -38,6 +38,44 @@ body {
   border-radius: 4px;
 }
 
+/* --- Micro-interactions --- */
+nav a {
+  position: relative;
+}
+nav a::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: -4px;
+  width: 100%;
+  height: 2px;
+  border-radius: 1px;
+  background: linear-gradient(90deg, #52b788, #48cae4);
+  transform: scaleX(0);
+  transform-origin: left;
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
+}
+nav a:hover {
+  color: #eef2ef !important;
+}
+nav a:hover::after {
+  transform: scaleX(1);
+}
+
+.skill-card:hover {
+  transform: translateY(-4px) !important;
+  box-shadow: 0 14px 34px rgba(0, 0, 0, 0.35);
+}
+
+/* Timeline: dot pulse when the entry is revealed */
+.rv-on [data-rv].rv-in > span:first-child {
+  animation: cpPop 0.7s ease-out;
+}
+
+section a[data-magnetic]:hover {
+  box-shadow: 0 12px 40px rgba(45, 106, 79, 0.6) !important;
+}
+
 /* --- Scroll reveal --- */
 .fade-up {
   opacity: 0;

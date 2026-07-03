@@ -54,16 +54,20 @@ const DICT = {
     skillsTitle: 'Compétences',
     skillsIntro:
       "Deux mondes, une même rigueur : la créativité d\u2019un front soigné, la solidité d\u2019une architecture bien pensée.",
-    skillsGreenTitle: 'Création & Interface',
-    skillsRedTitle: 'Architecture & Systèmes',
+    skillsGreenTitle: 'Web & Technos modernes',
+    skillsRedTitle: 'Développement métier',
+    trainingBadge: 'En formation',
+    softSkillsTitle: 'Et aussi…',
     aboutLabel: 'Qui suis-je ?',
     aboutTitle: 'À propos',
     aboutP1:
-      "Développeur web passionné, je vis à la croisée du code et de la montagne. Quand je ne construis pas d\u2019applications, je cours les sentiers pour vider la tête et revenir avec de meilleures idées.",
+      "Développeur plein d\u2019idées, quand je ne suis pas devant le PC j\u2019arpente les sentiers pour me vider la tête et revenir avec des idées encore meilleures.",
     aboutP2:
-      "J\u2019aime créer des outils qui ont du sens, avec des technos modernes et un souci constant de la qualité. Mon terrain idéal : un projet ambitieux, une bonne équipe, et une cascade pas trop loin.",
+      "J\u2019aime créer des outils qui ont du sens, et je me forme en continu sur des technos modernes avec un souci constant de la qualité. Mon terrain idéal : un projet ambitieux, une bonne équipe, et une cascade pas trop loin.",
     xpLabel: 'Mon parcours',
     xpTitle: 'Expériences',
+    xpEduTitle: 'Parcours scolaire',
+    xpProTitle: 'Expériences professionnelles',
     contactLabel: 'Travaillons ensemble',
     contactTitle: 'Contact',
     contactIntro:
@@ -97,16 +101,20 @@ const DICT = {
     skillsTitle: 'Skills',
     skillsIntro:
       'Two worlds, one discipline: the craft of a polished front end, the strength of a well-thought architecture.',
-    skillsGreenTitle: 'Craft & Interface',
-    skillsRedTitle: 'Architecture & Systems',
+    skillsGreenTitle: 'Web & Modern stack',
+    skillsRedTitle: 'Business development',
+    trainingBadge: 'In training',
+    softSkillsTitle: 'And also…',
     aboutLabel: 'Who am I?',
     aboutTitle: 'About',
     aboutP1:
-      "A passionate web developer, I live where code meets the mountains. When I\u2019m not building applications, I run the trails to clear my head and come back with better ideas.",
+      "A developer full of ideas — when I\u2019m not in front of the PC, I roam the trails to clear my head and come back with even better ones.",
     aboutP2:
-      "I love crafting tools that matter, with modern tech and a constant eye for quality. My ideal ground: an ambitious project, a great team, and a waterfall not too far away.",
+      "I love crafting tools that matter, and I keep training on modern tech with a constant eye for quality. My ideal ground: an ambitious project, a great team, and a waterfall not too far away.",
     xpLabel: 'My path',
     xpTitle: 'Experience',
+    xpEduTitle: 'Education',
+    xpProTitle: 'Work experience',
     contactLabel: "Let\u2019s work together",
     contactTitle: 'Contact',
     contactIntro:
@@ -135,51 +143,102 @@ const t = computed(() => DICT[lang.value])
 const F = computed(() => lang.value === 'fr')
 
 const skillsGreen = computed(() => [
-  { icon: '⚡', name: 'Vue.js / Nuxt', lvl: '80%', level: 80, desc: F.value ? 'Frontend moderne avec Vue 3, Composition API et InertiaJS.' : 'Modern frontend with Vue 3, Composition API and InertiaJS.' },
-  { icon: '🎨', name: 'CSS / UI Design', lvl: '74%', level: 74, desc: F.value ? 'Interfaces soignées, design responsive, attention au détail.' : 'Polished interfaces, responsive design, eye for detail.' },
-  { icon: '✨', name: F.value ? 'UX & Animations' : 'UX & Motion', lvl: '70%', level: 70, desc: F.value ? 'Micro-interactions et animations qui donnent vie à l\u2019interface.' : 'Micro-interactions and motion that bring the UI to life.' },
+  { icon: '⚡', name: 'Vue.js / Nuxt', lvl: '65%', level: 65, training: true, desc: F.value ? 'Frontend moderne avec Vue 3, Composition API et InertiaJS.' : 'Modern frontend with Vue 3, Composition API and InertiaJS.' },
+  { icon: '🖥', name: 'AdonisJS / Node', lvl: '60%', level: 60, training: true, desc: F.value ? 'APIs robustes et applications full-stack avec AdonisJS 6.' : 'Robust APIs and full-stack apps with AdonisJS 6.' },
+  { icon: '🗄', name: F.value ? 'SQL / Bases de données' : 'SQL / Databases', lvl: '85%', level: 85, desc: F.value ? 'Conception, modélisation et optimisation de bases de données.' : 'Database design, modelling and optimisation.' },
+  { icon: '🔧', name: 'Git', lvl: '72%', level: 72, desc: F.value ? 'Versioning, branches et travail collaboratif au quotidien.' : 'Versioning, branching and day-to-day collaborative work.' },
 ])
 
 const skillsRed = computed(() => [
-  { icon: '🖥', name: 'AdonisJS / Node', lvl: '76%', level: 76, desc: F.value ? 'APIs robustes et applications full-stack avec AdonisJS 6.' : 'Robust APIs and full-stack apps with AdonisJS 6.' },
-  { icon: '🗄', name: F.value ? 'SQL / Bases de données' : 'SQL / Databases', lvl: '72%', level: 72, desc: F.value ? 'Modélisation, migrations et ORM Lucid (SQLite, MySQL).' : 'Modelling, migrations and Lucid ORM (SQLite, MySQL).' },
-  { icon: '🔧', name: 'Git / CI-CD / DevOps', lvl: '70%', level: 70, desc: F.value ? 'Versioning, déploiement VPS — Nginx, PM2, Certbot.' : 'Versioning, VPS deployment — Nginx, PM2, Certbot.' },
+  { icon: '🪟', name: 'WinDev', lvl: '92%', level: 92, desc: F.value ? 'Applications métier complètes : ERP, facturation, planification.' : 'Complete business apps: ERP, invoicing, scheduling.' },
+  { icon: '🌐', name: 'WebDev', lvl: '82%', level: 82, desc: F.value ? 'Sites et applications web métier avec l’écosystème PC SOFT.' : 'Business websites and web apps with the PC SOFT ecosystem.' },
+  { icon: '📱', name: 'WinDev Mobile', lvl: '75%', level: 75, desc: F.value ? 'Applications mobiles connectées aux systèmes métier.' : 'Mobile apps connected to business systems.' },
+  { icon: '📊', name: 'VisualBasic', lvl: '70%', level: 70, desc: F.value ? 'Automatisations et outils bureautiques sur mesure.' : 'Automation and custom office tooling.' },
 ])
 
-const experiences = computed(() => [
+const softSkills = computed(() =>
+  F.value
+    ? [
+        { icon: '📋', name: 'Gestion de projet', desc: 'Du cahier des charges à la livraison : cadrage, suivi et relation client.' },
+        { icon: '🤝', name: "Travail d'équipe", desc: 'Collaboration, partage de connaissances et communication au quotidien.' },
+      ]
+    : [
+        { icon: '📋', name: 'Project management', desc: 'From specs to delivery: scoping, tracking and client relations.' },
+        { icon: '🤝', name: 'Teamwork', desc: 'Collaboration, knowledge sharing and day-to-day communication.' },
+      ]
+)
+
+const education = computed(() => [
+  {
+    dotStyle: 'background:#48cae4; box-shadow:0 0 0 3px rgba(72,202,228,0.18);',
+    date: '2013 — 2014',
+    role: F.value ? 'Licence professionnelle METINET (alternance)' : 'Professional bachelor METINET (apprenticeship)',
+    company: F.value ? 'Conception et gestion de sites internet — Bourg-en-Bresse' : 'Website design and management — Bourg-en-Bresse',
+    desc: F.value
+      ? 'Formation en alternance dédiée à la conception, au développement et à la gestion de sites internet.'
+      : 'Work-study programme dedicated to designing, developing and managing websites.',
+  },
   {
     dotStyle: 'background:#52b788; box-shadow:0 0 0 3px rgba(82,183,136,0.18);',
-    date: F.value ? '2024 — Présent' : '2024 — Present',
-    role: F.value ? 'Développeur Web — Projets personnels' : 'Web Developer — Personal projects',
-    company: 'AlpaStudio · alpastudio.fr',
+    date: '2011 — 2013',
+    role: F.value ? 'DUT Informatique' : 'Two-year technical degree in Computer Science',
+    company: F.value ? 'Université Lyon 1 (IUT)' : 'Lyon 1 University (IUT)',
     desc: F.value
-      ? "Conception et développement de plusieurs projets web : plateforme de jeux (Arcade Zone), site client (Ferme de l\u2019Ormois), portfolio. Stack : Vue.js, AdonisJS, Nuxt, SQLite."
-      : 'Designed and built several web projects: a games platform (Arcade Zone), a client site (Ferme de l\u2019Ormois), this portfolio. Stack: Vue.js, AdonisJS, Nuxt, SQLite.',
+      ? 'Option développement internet/web/mobile : algorithmique, bases de données, programmation web et mobile.'
+      : 'Internet/web/mobile development track: algorithms, databases, web and mobile programming.',
+  },
+  {
+    dotStyle: 'background:#74c69d; box-shadow:0 0 0 3px rgba(116,198,157,0.18);',
+    date: '2011',
+    role: F.value ? 'Baccalauréat SES' : 'High-school diploma (Economics & Social Sciences)',
+    company: F.value ? 'Filière économique et sociale' : 'Economics and social sciences track',
+    desc: '',
+  },
+])
+
+const workXp = computed(() => [
+  {
+    dotStyle: 'background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.18);',
+    date: F.value ? 'Depuis 2016' : 'Since 2016',
+    role: F.value ? 'Développeur d’applications sur mesure' : 'Custom software developer',
+    company: 'INFOFIL',
+    desc: F.value
+      ? 'Gestion de projet de A à Z : établissement du cahier des charges avec les clients, conception des bases de données, développement et maintien des applications et sites.'
+      : 'End-to-end project management: drafting specifications with clients, database design, development and maintenance of applications and websites.',
   },
   {
     dotStyle: 'background:#e08a3c; box-shadow:0 0 0 3px rgba(224,138,60,0.18);',
-    date: '2023 — 2024',
-    role: F.value ? 'Développeur — Application de gestion' : 'Developer — Business application',
-    company: 'Projet CIFC / WinDev',
+    date: '2016',
+    role: F.value ? 'Missions d’intérim' : 'Temporary work assignments',
+    company: 'MANPOWER',
     desc: F.value
-      ? "Développement d\u2019une application de devis et gestion sur WinDev. Architecture en classes, correction de bugs, intégration de fonctionnalités métier."
-      : 'Built a quoting and management application in WinDev. Class architecture, bug fixing, business-feature integration.',
+      ? 'Missions en intérim de juillet à septembre : agent de production, BTP, opérateur de production.'
+      : 'Temporary assignments from July to September: production worker, construction, production operator.',
   },
   {
-    dotStyle: 'background:#ef4444; box-shadow:0 0 0 3px rgba(239,68,68,0.18);',
-    date: '2022 — 2023',
-    role: F.value ? 'Formation & Développement' : 'Training & Development',
-    company: F.value ? 'Formation Inovyn / Vue.js' : 'Inovyn training / Vue.js',
+    dotStyle: 'background:#e0a05c; box-shadow:0 0 0 3px rgba(224,160,92,0.18);',
+    date: '2015 — 2016',
+    role: F.value ? 'Service civique + CDD' : 'Civic service + fixed-term contract',
+    company: 'MFR Doucier',
     desc: F.value
-      ? 'Montée en compétences sur Vue.js et les technologies web modernes. Participation à des projets de formation industrielle.'
-      : 'Skilling up on Vue.js and modern web technologies. Took part in industrial training projects.',
+      ? 'Service civique de 6 mois : cours d’initiation à l’informatique et aux nouvelles technologies aux élèves de 4e/3e, maintenance informatique et communication (affiches, flyers). Puis CDD de deux semaines sur un logiciel de gestion de clefs (Winkhaus).'
+      : 'Six-month civic service: introductory IT and new-technology classes for middle-school pupils, IT maintenance and communication (posters, flyers). Then a two-week contract on a key-management software (Winkhaus).',
+  },
+  {
+    dotStyle: 'background:#f87171; box-shadow:0 0 0 3px rgba(248,113,113,0.18);',
+    date: '2013 — 2014',
+    role: F.value ? 'Développeur PHP (alternance)' : 'PHP developer (apprenticeship)',
+    company: 'DOOR Informatique',
+    desc: F.value
+      ? 'Développement PHP autour d’un écosystème et d’un automate : ajout et amélioration de fonctionnalités de l’écosystème.'
+      : 'PHP development around an ecosystem and an automation system: added and improved ecosystem features.',
   },
 ])
 
 const hobbies = computed(() =>
   F.value
-    ? ['Course en montagne', 'Trail running', 'Randonnée', 'Informatique', 'DIY & Bricolage', 'Jeux de société']
-    : ['Mountain running', 'Trail running', 'Hiking', 'Tech & coding', 'DIY & Tinkering', 'Board games']
+    ? ['Course en montagne', 'Trail running', 'Randonnée', 'Informatique', 'Jeux de société']
+    : ['Mountain running', 'Trail running', 'Hiking', 'Tech & coding', 'Board games']
 )
 
 const projects = computed(() => {
@@ -195,7 +254,7 @@ const projects = computed(() => {
 })
 
 const stats = computed(() => [
-  { value: '5+', count: 5, suffix: '+', label: F.value ? 'Projets web livrés' : 'Web projects shipped' },
+  { value: '10+', count: 10, suffix: '+', label: F.value ? 'Projets menés à bien' : 'Projects seen through' },
   { value: '100km+', count: 100, suffix: 'km+', label: F.value ? 'Trails parcourus' : 'Trails run' },
   { value: '∞', count: NaN, suffix: '', label: F.value ? 'Passion pour le code' : 'Passion for code' },
 ])
@@ -950,10 +1009,11 @@ const trailPath =
               <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #74c69d">{{ t.skillsGreenTitle }}</h3>
             </div>
             <div style="display: flex; flex-direction: column; gap: 1rem">
-              <div v-for="(s, i) in skillsGreen" :key="i" data-rv="left" data-rv-stagger style="background: linear-gradient(160deg, rgba(82, 183, 136, 0.07), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(82, 183, 136, 0.18); border-radius: 14px; padding: 1.3rem 1.4rem; transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s">
+              <div v-for="(s, i) in skillsGreen" :key="i" class="skill-card" data-rv="left" data-rv-stagger style="background: linear-gradient(160deg, rgba(82, 183, 136, 0.07), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(82, 183, 136, 0.18); border-radius: 14px; padding: 1.3rem 1.4rem; transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s">
                 <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.7rem">
                   <span style="font-size: 1.5rem">{{ s.icon }}</span>
                   <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; font-weight: 600; color: #eef2ef">{{ s.name }}</h4>
+                  <span v-if="s.training" style="padding: 0.22rem 0.65rem; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: #ffd166; background: rgba(255, 209, 102, 0.1); border: 1px solid rgba(255, 209, 102, 0.4); white-space: nowrap; animation: pulseGlow 2.4s ease-in-out infinite">{{ t.trainingBadge }}</span>
                   <span :data-count-to="s.level" data-count-suffix="%" style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #74c69d">{{ s.lvl }}</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #9fb3aa; line-height: 1.6; margin-bottom: 0.9rem">{{ s.desc }}</p>
@@ -970,16 +1030,34 @@ const trailPath =
               <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #f87171">{{ t.skillsRedTitle }}</h3>
             </div>
             <div style="display: flex; flex-direction: column; gap: 1rem">
-              <div v-for="(s, i) in skillsRed" :key="i" data-rv="right" data-rv-stagger style="background: linear-gradient(160deg, rgba(239, 68, 68, 0.07), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 14px; padding: 1.3rem 1.4rem; transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s">
+              <div v-for="(s, i) in skillsRed" :key="i" class="skill-card" data-rv="right" data-rv-stagger style="background: linear-gradient(160deg, rgba(239, 68, 68, 0.07), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 14px; padding: 1.3rem 1.4rem; transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s">
                 <div style="display: flex; align-items: center; gap: 0.8rem; margin-bottom: 0.7rem">
                   <span style="font-size: 1.5rem">{{ s.icon }}</span>
                   <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.05rem; font-weight: 600; color: #eef2ef">{{ s.name }}</h4>
+                  <span v-if="s.training" style="padding: 0.22rem 0.65rem; border-radius: 999px; font-family: 'JetBrains Mono', monospace; font-size: 0.62rem; letter-spacing: 0.08em; text-transform: uppercase; color: #ffd166; background: rgba(255, 209, 102, 0.1); border: 1px solid rgba(255, 209, 102, 0.4); white-space: nowrap; animation: pulseGlow 2.4s ease-in-out infinite">{{ t.trainingBadge }}</span>
                   <span :data-count-to="s.level" data-count-suffix="%" style="margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #f87171">{{ s.lvl }}</span>
                 </div>
                 <p style="font-size: 0.88rem; color: #b6a3a3; line-height: 1.6; margin-bottom: 0.9rem">{{ s.desc }}</p>
                 <div style="height: 5px; background: rgba(255, 255, 255, 0.07); border-radius: 3px; overflow: hidden">
                   <div :data-level="s.level" style="height: 100%; width: 0; background: linear-gradient(90deg, #7f1d1d, #ef4444); border-radius: 3px; transition: width 1.2s cubic-bezier(0.16, 1, 0.3, 1)"></div>
                 </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Soft skills -->
+        <div style="margin-top: 2.6rem">
+          <div style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.4rem">
+            <span style="width: 9px; height: 9px; border-radius: 50%; background: #48cae4; box-shadow: 0 0 10px rgba(72, 202, 228, 0.7)"></span>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9fdbe8">{{ t.softSkillsTitle }}</h3>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(330px, 1fr)); gap: 1rem">
+            <div v-for="(s, i) in softSkills" :key="i" class="skill-card" data-rv="scale" data-rv-stagger style="display: flex; align-items: center; gap: 1rem; background: linear-gradient(160deg, rgba(72, 202, 228, 0.07), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(72, 202, 228, 0.2); border-radius: 14px; padding: 1.2rem 1.4rem; transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s">
+              <span style="font-size: 1.7rem">{{ s.icon }}</span>
+              <div>
+                <h4 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.02rem; font-weight: 600; color: #eef2ef; margin-bottom: 0.25rem">{{ s.name }}</h4>
+                <p style="font-size: 0.85rem; color: #9fb3aa; line-height: 1.5">{{ s.desc }}</p>
               </div>
             </div>
           </div>
@@ -993,14 +1071,38 @@ const trailPath =
         <p data-rv="up" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 0.3em; text-transform: uppercase; color: #e08a3c; margin-bottom: 0.6rem">{{ t.xpLabel }}</p>
         <h2 data-rv="clip" data-rv-d="80" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.2rem, 4.5vw, 3.4rem); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.7rem">{{ t.xpTitle }}</h2>
         <div data-rv="rule" data-rv-d="180" style="height: 3px; width: 66px; border-radius: 2px; margin-bottom: 3rem; background: linear-gradient(90deg, #e08a3c, transparent)"></div>
+        <!-- Parcours scolaire -->
+        <div data-rv="up" style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.6rem">
+          <span style="width: 9px; height: 9px; border-radius: 50%; background: #48cae4; box-shadow: 0 0 10px rgba(72, 202, 228, 0.7)"></span>
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #9fdbe8">{{ t.xpEduTitle }}</h3>
+        </div>
+        <div style="position: relative; padding-left: 2.4rem; margin-bottom: 1.5rem">
+          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, #48cae4, #52b788)"></div>
+          <div v-for="(xp, i) in education" :key="'edu' + i" data-rv="left" data-rv-stagger style="position: relative; padding-bottom: 2.4rem">
+            <span :style="'position:absolute; left:-2.4rem; top:4px; width:16px; height:16px; border-radius:50%; border:3px solid #12101a; ' + xp.dotStyle"></span>
+            <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #7bd0e8; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem">{{ xp.date }}</p>
+            <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 600; color: #eef2ef; margin-bottom: 0.2rem">{{ xp.role }}</h3>
+            <p style="font-size: 0.92rem; color: #48cae4; margin-bottom: 0.7rem">{{ xp.company }}</p>
+            <p v-if="xp.desc" style="font-size: 0.92rem; line-height: 1.7; color: #a3b3ab">{{ xp.desc }}</p>
+          </div>
+        </div>
+
+        <!-- Passage scolaire -> pro : le coureur traverse -->
+        <div data-rv="rule" style="position: relative; height: 3px; border-radius: 2px; margin: 0 0 3rem; background: linear-gradient(90deg, #48cae4, #e08a3c 55%, #ef4444); opacity: 0.55"></div>
+
+        <!-- Expériences professionnelles -->
+        <div data-rv="up" style="display: flex; align-items: center; gap: 0.7rem; margin-bottom: 1.6rem">
+          <span style="width: 9px; height: 9px; border-radius: 50%; background: #e08a3c; box-shadow: 0 0 10px rgba(224, 138, 60, 0.7)"></span>
+          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.15rem; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; color: #e0a05c">{{ t.xpProTitle }}</h3>
+        </div>
         <div style="position: relative; padding-left: 2.4rem">
-          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, #52b788, #e08a3c 55%, #ef4444)"></div>
-          <div v-for="(xp, i) in experiences" :key="i" data-rv="left" data-rv-stagger style="position: relative; padding-bottom: 2.6rem">
+          <div style="position: absolute; left: 7px; top: 6px; bottom: 6px; width: 2px; background: linear-gradient(180deg, #e08a3c, #ef4444)"></div>
+          <div v-for="(xp, i) in workXp" :key="'pro' + i" data-rv="right" data-rv-stagger style="position: relative; padding-bottom: 2.4rem">
             <span :style="'position:absolute; left:-2.4rem; top:4px; width:16px; height:16px; border-radius:50%; border:3px solid #12101a; ' + xp.dotStyle"></span>
             <p style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #e0a05c; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.4rem">{{ xp.date }}</p>
             <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.25rem; font-weight: 600; color: #eef2ef; margin-bottom: 0.2rem">{{ xp.role }}</h3>
             <p style="font-size: 0.92rem; color: #48cae4; margin-bottom: 0.7rem">{{ xp.company }}</p>
-            <p style="font-size: 0.92rem; line-height: 1.7; color: #a3b3ab">{{ xp.desc }}</p>
+            <p v-if="xp.desc" style="font-size: 0.92rem; line-height: 1.7; color: #a3b3ab">{{ xp.desc }}</p>
           </div>
         </div>
       </div>
