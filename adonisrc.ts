@@ -8,7 +8,6 @@ export default defineConfig({
   */
   commands: [
     () => import('@adonisjs/core/commands'),
-    () => import('@adonisjs/vite/commands'),
   ],
 
   /*
@@ -18,6 +17,7 @@ export default defineConfig({
   */
   providers: [
     () => import('@adonisjs/core/providers/app_provider'),
+    () => import('@adonisjs/core/providers/edge_provider'),
     () => import('@adonisjs/core/providers/hash_provider'),
     {
       file: () => import('@adonisjs/core/providers/repl_provider'),

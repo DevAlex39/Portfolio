@@ -8,7 +8,7 @@ export default class HomeController {
   async index({ inertia, request }: HttpContext) {
     const language = request.input('lang') === 'en' ? 'en' : 'fr'
 
-    return inertia.render('home', {
+    return inertia.render('Home', {
       language,
       showRunner: true,
       showParticles: true,
