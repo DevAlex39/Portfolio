@@ -264,7 +264,7 @@ const projects = computed(() => {
 
 const stats = computed(() => [
   { value: '10+', count: 10, suffix: '+', label: F.value ? 'Projets menés à bien' : 'Projects seen through' },
-  { value: '100km+', count: 100, suffix: 'km+', label: F.value ? 'Trails parcourus' : 'Trails run' },
+  { value: '10 000km+', count: 10000, display: F.value ? '10 000' : '10,000', suffix: 'km+', label: F.value ? 'Trails parcourus' : 'Trails run' },
   { value: '∞', count: NaN, suffix: '', label: F.value ? 'Passion pour le code' : 'Passion for code' },
 ])
 
@@ -1019,18 +1019,30 @@ function updateFavicon(col: string) {
 function odometer(el: HTMLElement) {
   const to = parseFloat(el.getAttribute('data-count-to') || '')
   const suffix = el.getAttribute('data-count-suffix') || ''
+  /* Affichage groupe optionnel (ex: "10 000") — les non-chiffres
+     deviennent des separateurs statiques entre les rouleaux */
+  const display = el.getAttribute('data-count-display') || String(to)
   if (!isFinite(to)) return
   if (el.dataset.counted) return
   el.dataset.counted = '1'
   if (reduce) {
-    el.textContent = to + suffix
+    el.textContent = display + suffix
     return
   }
   el.textContent = ''
   el.classList.add('odo')
-  String(to)
+  let digitIdx = 0
+  display
     .split('')
-    .forEach((d, idx) => {
+    .forEach((d) => {
+      if (!/\d/.test(d)) {
+        const sep = document.createElement('span')
+        sep.className = 'odo-sfx'
+        sep.textContent = d === ' ' ? ' ' : d
+        el.appendChild(sep)
+        return
+      }
+      const idx = digitIdx++
       const col = document.createElement('span')
       col.className = 'odo-col'
       const strip = document.createElement('span')
@@ -1538,7 +1550,7 @@ const trailPath =
           </div>
           <div data-rv="right" style="display: flex; flex-direction: column; gap: 1rem">
             <div v-for="(st, i) in stats" :key="i" style="display: flex; align-items: center; gap: 1.2rem; padding: 1.4rem 1.5rem; background: linear-gradient(135deg, rgba(239, 68, 68, 0.08), rgba(255, 255, 255, 0.02)); border: 1px solid rgba(239, 68, 68, 0.18); border-radius: 14px">
-              <span :data-count-to="st.count" :data-count-suffix="st.suffix" data-odometer style="font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; min-width: 4rem; background: linear-gradient(135deg, #f87171, #e08a3c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">{{ st.value }}</span>
+              <span :data-count-to="st.count" :data-count-suffix="st.suffix" :data-count-display="(st as any).display" data-odometer style="font-family: 'Space Grotesk', sans-serif; font-size: 2.2rem; font-weight: 700; min-width: 4rem; background: linear-gradient(135deg, #f87171, #e08a3c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">{{ st.value }}</span>
               <span style="font-size: 0.9rem; color: #b6a3a3; line-height: 1.4">{{ st.label }}</span>
             </div>
           </div>
