@@ -1008,3 +1008,14 @@ footer {
     display: none;
   }
 }
+
+/* --- Performance mobile : desactiver les effets couteux au scroll --- */
+@media (max-width: 760px) {
+  .film-grain {
+    display: none !important;
+  }
+  .site-nav {
+    backdrop-filter: none !important;
+    background: rgba(8, 8, 10, 0.94) !important;
+  }
+}

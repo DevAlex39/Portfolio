@@ -53,7 +53,7 @@ const projStars = (() =>
  * ------------------------------------------------------------------------ */
 const DICT = {
   fr: {
-    nav: ['Accueil', 'Compétences', 'Expériences', 'Projets', 'À propos', 'Contact'],
+    nav: ['Accueil', 'Compétences', 'Expériences', 'Projets', 'À propos', 'Créations', 'Contact'],
     heroKicker: 'Développeur Web & Coureur de Trail',
     heroTagline:
       'Je construis des applications web robustes, entre les lignes de code et les sentiers de montagne.',
@@ -67,6 +67,10 @@ const DICT = {
     skillsRedTitle: 'Développement métier',
     trainingBadge: 'En formation',
     softSkillsTitle: 'Et aussi…',
+    creationsLabel: 'En dehors des missions',
+    creationsTitle: 'Créations',
+    creationsIntro: 'Des projets perso menés de A à Z, pour le plaisir de coder autre chose et d’explorer de nouvelles technos.',
+    creationsCta: 'Visiter le site',
     aboutLabel: 'Qui suis-je ?',
     aboutTitle: 'À propos',
     aboutP1:
@@ -88,7 +92,6 @@ const DICT = {
     send: 'Envoyer le message',
     sentMsg: '✓ Message envoyé !',
     finishLabel: 'Arrivée',
-    finishDone: 'Parcours terminé 🎉',
     finishSub: "Merci d’avoir suivi le parcours jusqu’au bout.",
     projLabel: 'Projets professionnels',
     projTitle: 'Projets clients',
@@ -100,7 +103,7 @@ const DICT = {
     footer: '© 2025 Alexis Paillot — AlpaStudio · Code & Montagne',
   },
   en: {
-    nav: ['Home', 'Skills', 'Experience', 'Projects', 'About', 'Contact'],
+    nav: ['Home', 'Skills', 'Experience', 'Projects', 'About', 'Creations', 'Contact'],
     heroKicker: 'Web Developer & Trail Runner',
     heroTagline:
       'I build robust web applications, between lines of code and mountain trails.',
@@ -114,6 +117,10 @@ const DICT = {
     skillsRedTitle: 'Business development',
     trainingBadge: 'In training',
     softSkillsTitle: 'And also…',
+    creationsLabel: 'Outside the day job',
+    creationsTitle: 'Creations',
+    creationsIntro: 'Personal projects built from scratch, for the fun of coding something different and exploring new tech.',
+    creationsCta: 'Visit the site',
     aboutLabel: 'Who am I?',
     aboutTitle: 'About',
     aboutP1:
@@ -135,7 +142,6 @@ const DICT = {
     send: 'Send message',
     sentMsg: '✓ Message sent!',
     finishLabel: 'Finish',
-    finishDone: 'Journey complete 🎉',
     finishSub: 'Thanks for following the journey all the way down.',
     projLabel: 'Professional projects',
     projTitle: 'Client work',
@@ -262,6 +268,34 @@ const projects = computed(() => {
   ]
 })
 
+const creations = computed(() => {
+  const f = F.value
+  return [
+    {
+      icon: '🌾',
+      name: 'La Ferme de l’Ormois',
+      url: 'https://lafermedelormois.alpastudio.fr',
+      domain: f ? 'Site vitrine & vente directe' : 'Showcase & direct sale',
+      desc: f
+        ? 'Site complet pour une ferme locale : présentation des produits, prise de contact et back-office d’administration sur mesure.'
+        : 'Full site for a local farm: product showcase, contact form and a custom admin back-office.',
+      tags: f ? ['Nuxt 4', 'SQLite', 'Admin sur-mesure'] : ['Nuxt 4', 'SQLite', 'Custom admin'],
+      accent: '#52b788',
+    },
+    {
+      icon: '🕹️',
+      name: 'Arcade Zone',
+      url: 'https://arcade.alpastudio.fr',
+      domain: f ? 'Plateforme de jeux multijoueur' : 'Multiplayer games platform',
+      desc: f
+        ? 'Une salle d’arcade en ligne : Yahtzee, Skyjo, Petits Chevaux, Motus et plus, jouables en temps réel entre amis.'
+        : 'An online arcade room: Yahtzee, Skyjo, Petits Chevaux, Motus and more, playable in real time with friends.',
+      tags: f ? ['Vue.js', 'Socket.io', 'Temps réel'] : ['Vue.js', 'Socket.io', 'Real-time'],
+      accent: '#48cae4',
+    },
+  ]
+})
+
 const stats = computed(() => [
   { value: '10+', count: 10, suffix: '+', label: F.value ? 'Projets menés à bien' : 'Projects seen through' },
   { value: '10 000km+', count: 10000, display: F.value ? '10 000' : '10,000', suffix: 'km+', label: F.value ? 'Trails parcourus' : 'Trails run' },
@@ -269,7 +303,7 @@ const stats = computed(() => [
 ])
 
 const navLinks = computed(() =>
-  ['#accueil', '#competences', '#experiences', '#projets', '#apropos', '#contact'].map((href, i) => ({
+  ['#accueil', '#competences', '#experiences', '#projets', '#apropos', '#creations', '#contact'].map((href, i) => ({
     href,
     label: t.value.nav[i],
   }))
@@ -397,6 +431,14 @@ let footSide = 0
 let celebrated = false
 let cpLang = 'fr'
 let lastDustX = -999
+let lightFx = false
+/* Longueur du fil conducteur + rect du calque fixe (position:fixed, ne
+   bouge pas au scroll) : mis en cache pour eviter de recalculer une
+   geometrie SVG couteuse (getTotalLength) a chaque frame de scroll */
+let trailLen = 0
+let trailRectCache = { left: 0, top: 0, width: 0, height: 0 }
+let mountLen = 0
+let mountainHCache = 0
 let mx = 0
 let my = 0
 let ringX = 0
@@ -412,6 +454,7 @@ const sectionDefs = [
   { sel: '#experiences', fr: 'Expériences', en: 'Experience' },
   { sel: '#projets', fr: 'Projets', en: 'Projects' },
   { sel: '#apropos', fr: 'À propos', en: 'About' },
+  { sel: '#creations', fr: 'Créations', en: 'Creations' },
   { sel: '#contact', fr: '🏁 Arrivée', en: '🏁 Finish', finish: true },
 ] as any[]
 
@@ -438,6 +481,15 @@ function layoutProjects() {
   const trackWidth = track.scrollWidth
   projScroll = Math.max(0, trackWidth - vw)
   sec.style.height = vh + projScroll + 'px'
+
+  /* Cache : la longueur du chemin de crete et la hauteur du massif ne
+     changent qu'au resize, pas a chaque frame de scroll */
+  const mountPath = projMountPathEl.value
+  if (mountPath) {
+    mountLen = mountPath.getTotalLength()
+    const mt = mountPath.closest('.proj-mountains') as HTMLElement | null
+    mountainHCache = mt ? mt.clientHeight : vh * 0.42
+  }
 }
 
 function onResize() {
@@ -464,6 +516,10 @@ function buildCheckpoints() {
   const len = path.getTotalLength()
   const w = trail.clientWidth,
     h = trail.clientHeight
+  /* Cache : trail est position:fixed, sa geometrie ne change qu'au resize */
+  trailLen = len
+  const tRect = trail.getBoundingClientRect()
+  trailRectCache = { left: tRect.left, top: tRect.top, width: w, height: h }
   const sx = w / 120,
     sy = h / 1000
   checkpoints = sectionDefs.map((def) => {
@@ -534,8 +590,10 @@ function update(initial: boolean) {
     }
   }
 
+  let finishTop: number | null = null
   if (finishEl.value) {
     const fr = finishEl.value.getBoundingClientRect()
+    finishTop = fr.top
     const inView = fr.top < vh * 0.78 && fr.bottom > vh * 0.2
     if (inView && !celebrated) {
       celebrated = true
@@ -550,10 +608,10 @@ function update(initial: boolean) {
     path = pathEl.value,
     runner = runnerEl.value
   if (path && runner && trail) {
-    const len = path.getTotalLength()
+    const len = trailLen || path.getTotalLength()
     const pt = path.getPointAtLength(p * len)
-    const w = trail.clientWidth,
-      h = trail.clientHeight
+    const w = trailRectCache.width || trail.clientWidth,
+      h = trailRectCache.height || trail.clientHeight
     const sx = w / 120,
       sy = h / 1000
     const x = pt.x * sx,
@@ -566,9 +624,8 @@ function update(initial: boolean) {
        ou l'arche declenche les confettis (fr.top < 78% de la hauteur) */
     if (kmEl.value) {
       let kmP = p
-      if (finishEl.value) {
-        const fTop = finishEl.value.getBoundingClientRect().top + y
-        const finishScroll = fTop - vh * 0.78
+      if (finishTop !== null) {
+        const finishScroll = finishTop + y - vh * 0.78
         kmP = finishScroll > 0 ? Math.min(1, y / finishScroll) : 1
       }
       const d = (kmP * 42.2).toFixed(1)
@@ -593,7 +650,7 @@ function update(initial: boolean) {
     if (runGlowEl.value) runGlowEl.value.style.background = col
 
     const traveled = p * len
-    if (!initial && !reduce && Math.abs(traveled - lastFootLen) > 22) {
+    if (!initial && !reduce && !lightFx && Math.abs(traveled - lastFootLen) > 22) {
       lastFootLen = traveled
       dropFoot(x, py, col)
     }
@@ -740,23 +797,20 @@ function updateProjects(vh: number, p: number) {
   const eEntry = entry * entry * (3 - 2 * entry)
 
   const mountPath = projMountPathEl.value
-  const mt = mountPath ? (mountPath.closest('.proj-mountains') as HTMLElement | null) : null
-  const mh = mt ? mt.clientHeight : vh * 0.42
+  const mh = mountainHCache || vh * 0.42
   const mTop = vh - mh
-  const len = mountPath ? mountPath.getTotalLength() : 1
+  const len = mountLen || 1
   const ridgePt = mountPath ? mountPath.getPointAtLength(pp * len) : { x: 0, y: 0 }
   const Rm = { x: (ridgePt.x / 1000) * vw, y: mTop + (ridgePt.y / 300) * mh }
 
   let Cv = Rm
   const trail = trailEl.value,
     path = pathEl.value
-  if (trail && path) {
-    const tr = trail.getBoundingClientRect()
-    const lenV = path.getTotalLength()
-    const ptv = path.getPointAtLength((p || 0) * lenV)
+  if (trailLen && path) {
+    const ptv = path.getPointAtLength((p || 0) * trailLen)
     Cv = {
-      x: tr.left + ptv.x * (trail.clientWidth / 120),
-      y: tr.top + ptv.y * (trail.clientHeight / 1000),
+      x: trailRectCache.left + ptv.x * (trailRectCache.width / 120),
+      y: trailRectCache.top + ptv.y * (trailRectCache.height / 1000),
     }
   }
   /* Position du coureur des cretes : interpolee vers le fil conducteur
@@ -807,7 +861,7 @@ function updateProjects(vh: number, p: number) {
     if (projGlowEl.value) projGlowEl.value.style.background = col
 
     /* Poussiere soulevee par la foulee sur la crete */
-    if (!reduce && pinned && mvis > 0.5 && Math.abs(C.x - lastDustX) > 26) {
+    if (!reduce && !lightFx && pinned && mvis > 0.5 && Math.abs(C.x - lastDustX) > 26) {
       lastDustX = C.x
       dropDust(C.x, C.y + 18, col)
     }
@@ -980,7 +1034,7 @@ function dropRipple(cp: any, col: string) {
 
 /* --- 11. Empreintes au clic --- */
 function clickSteps(e: MouseEvent) {
-  if (reduce) return
+  if (reduce || lightFx) return
   for (let k = 0; k < 2; k++) {
     const f = document.createElement('span')
     f.className = 'footprint fp-click'
@@ -1104,6 +1158,12 @@ function dropFoot(x: number, y: number, col: string) {
  * ------------------------------------------------------------------------ */
 onMounted(() => {
   reduce = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches)
+  /* Mode leger : mobile / pointeur grossier — evite le surcout des
+     particules (empreintes, poussiere) generees en continu au scroll */
+  lightFx = !!(
+    window.matchMedia &&
+    (window.matchMedia('(pointer: coarse)').matches || window.matchMedia('(max-width: 760px)').matches)
+  )
   window.addEventListener('scroll', onScroll, { passive: true, capture: true })
   window.addEventListener('resize', onResize, { passive: true })
 
@@ -1213,8 +1273,10 @@ const trailPath =
       <span v-for="(p, i) in particles" :key="i" :style="p.style"></span>
     </div>
 
-    <!-- Film grain -->
+    <!-- Film grain (desactive sur mobile : mix-blend-mode plein ecran
+         force une recomposition couteuse a chaque frame de scroll) -->
     <div
+      class="film-grain"
       style="position: fixed; inset: 0; pointer-events: none; z-index: 36; opacity: 0.06; mix-blend-mode: overlay; background-repeat: repeat; background-image: url(data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27180%27%20height=%27180%27%3E%3Cfilter%20id=%27n%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.8%27%20numOctaves=%272%27%20stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect%20width=%27180%27%20height=%27180%27%20filter=%27url%28%23n%29%27/%3E%3C/svg%3E)"
     ></div>
 
@@ -1247,7 +1309,7 @@ const trailPath =
     </div>
 
     <!-- Nav -->
-    <nav style="position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: 1rem clamp(1.2rem, 4vw, 3rem); display: flex; align-items: center; justify-content: space-between; background: rgba(8, 8, 10, 0.72); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(82, 183, 136, 0.16)">
+    <nav class="site-nav" style="position: fixed; top: 0; left: 0; right: 0; z-index: 200; padding: 1rem clamp(1.2rem, 4vw, 3rem); display: flex; align-items: center; justify-content: space-between; background: rgba(8, 8, 10, 0.72); backdrop-filter: blur(14px); border-bottom: 1px solid rgba(82, 183, 136, 0.16)">
       <span style="font-family: 'Space Grotesk', sans-serif; font-size: 1.35rem; font-weight: 700; letter-spacing: 0.02em; display: flex; align-items: center; gap: 0.55rem">
         <span style="width: 11px; height: 11px; border-radius: 50%; background: linear-gradient(135deg, #52b788, #ef4444); box-shadow: 0 0 12px rgba(82, 183, 136, 0.6)"></span>
         <span style="background: linear-gradient(100deg, #74c69d, #eef2ef 60%, #f87171); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">AlpaStudio</span>
@@ -1558,6 +1620,44 @@ const trailPath =
       </div>
     </section>
 
+    <!-- Créations -->
+    <section id="creations" data-screen-label="Créations" style="position: relative; background: linear-gradient(180deg, #170a0d 0%, #10141c 55%, #0d0709 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">
+      <div style="max-width: 1080px; margin: 0 auto">
+        <p data-rv="up" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; letter-spacing: 0.3em; text-transform: uppercase; color: #48cae4; margin-bottom: 0.6rem">{{ t.creationsLabel }}</p>
+        <h2 data-rv="clip" data-rv-d="80" style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(2.2rem, 4.5vw, 3.4rem); font-weight: 700; letter-spacing: -0.01em; margin-bottom: 0.7rem">{{ t.creationsTitle }}</h2>
+        <div data-rv="rule" data-rv-d="180" style="height: 3px; width: 66px; border-radius: 2px; margin-bottom: 1.3rem; background: linear-gradient(90deg, #48cae4, transparent)"></div>
+        <p data-rv="up" data-rv-d="120" style="color: #9fb3aa; max-width: 620px; line-height: 1.7; margin-bottom: 2.8rem">{{ t.creationsIntro }}</p>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.6rem">
+          <a
+            v-for="(cr, i) in creations"
+            :key="i"
+            :href="cr.url"
+            target="_blank"
+            rel="noopener"
+            class="skill-card"
+            data-rv="up"
+            data-rv-stagger
+            :style="'display:block; text-decoration:none; position:relative; overflow:hidden; background:linear-gradient(160deg, ' + cr.accent + '14, rgba(255,255,255,0.02)); border:1px solid ' + cr.accent + '33; border-radius:18px; padding:clamp(1.6rem, 3vw, 2.2rem); transition:border-color .3s, transform .3s, box-shadow .3s;'"
+          >
+            <span class="proj-watermark" aria-hidden="true">{{ cr.icon }}</span>
+            <div style="display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem">
+              <span :style="'width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; background:' + cr.accent + '1f; border:1px solid ' + cr.accent + '40'">{{ cr.icon }}</span>
+              <div>
+                <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: 1.3rem; font-weight: 600; color: #eef2ef; line-height: 1.2">{{ cr.name }}</h3>
+                <p :style="'font-size:0.78rem; font-family:\'JetBrains Mono\', monospace; letter-spacing:0.04em; margin-top:0.2rem; color:' + cr.accent">{{ cr.domain }}</p>
+              </div>
+            </div>
+            <p style="font-size: 0.94rem; color: #b9c7c0; line-height: 1.7; margin-bottom: 1.4rem">{{ cr.desc }}</p>
+            <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.4rem">
+              <span v-for="(tg, j) in cr.tags" :key="j" :style="'padding:0.32rem 0.8rem; border-radius:8px; font-size:0.72rem; background:' + cr.accent + '14; border:1px solid ' + cr.accent + '30; color:#eef2ef'">{{ tg }}</span>
+            </div>
+            <span :style="'display:inline-flex; align-items:center; gap:0.5rem; font-family:\'Space Grotesk\', sans-serif; font-weight:600; font-size:0.9rem; color:' + cr.accent">{{ t.creationsCta }} <span>↗</span></span>
+          </a>
+        </div>
+      </div>
+    </section>
+
     <!-- Contact -->
     <section id="contact" data-screen-label="Contact" style="position: relative; background: linear-gradient(180deg, #170a0d 0%, #0d0709 60%, #08080a 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">
       <div style="max-width: 1000px; margin: 0 auto">
@@ -1635,8 +1735,7 @@ const trailPath =
               </svg>
             </div>
           </div>
-          <h3 style="font-family: 'Space Grotesk', sans-serif; font-size: clamp(1.7rem, 3.4vw, 2.6rem); font-weight: 700; margin-top: 1.4rem; letter-spacing: -0.01em; background: linear-gradient(135deg, #f87171, #e08a3c); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">{{ t.finishDone }}</h3>
-          <p style="color: #a9b6af; margin-top: 0.45rem; font-size: 0.96rem">{{ t.finishSub }}</p>
+          <p style="color: #a9b6af; margin-top: 1.6rem; font-size: 0.96rem">{{ t.finishSub }}</p>
           <div v-if="rank != null" class="bib-card">
             <div class="bib-pins"><span></span><span></span></div>
             <span class="bib-top">AlpaStudio Trail</span>
