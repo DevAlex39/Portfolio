@@ -432,6 +432,10 @@ let celebrated = false
 let cpLang = 'fr'
 let lastDustX = -999
 let lightFx = false
+/* Position statique (dans l'espace non transforme du track) de chaque
+   carte projet : evite un querySelectorAll + getBoundingClientRect par
+   carte a CHAQUE frame de scroll pendant tout le defilement horizontal */
+let projCardMeta: { el: HTMLElement; centerX: number }[] = []
 /* Longueur du fil conducteur + rect du calque fixe (position:fixed, ne
    bouge pas au scroll) : mis en cache pour eviter de recalculer une
    geometrie SVG couteuse (getTotalLength) a chaque frame de scroll */
@@ -481,6 +485,13 @@ function layoutProjects() {
   const trackWidth = track.scrollWidth
   projScroll = Math.max(0, trackWidth - vw)
   sec.style.height = vh + projScroll + 'px'
+
+  /* Cache : position statique de chaque carte projet dans le track
+     (le layout flex ne bouge pas, seul translateX(track) change) */
+  projCardMeta = Array.from(track.querySelectorAll('[data-proj-card]')).map((c) => {
+    const el = c as HTMLElement
+    return { el, centerX: el.offsetLeft + el.offsetWidth / 2 }
+  })
 
   /* Cache : la longueur du chemin de crete et la hauteur du massif ne
      changent qu'au resize, pas a chaque frame de scroll */
@@ -897,13 +908,12 @@ function updateProjects(vh: number, p: number) {
   }
   if (projStarsEl.value) projStarsEl.value.style.opacity = nightF.toFixed(3)
 
-  if (near) {
-    const cards = track.querySelectorAll('[data-proj-card]')
+  if (near && projCardMeta.length) {
     const cx = vw / 2
-    cards.forEach((c) => {
-      const el = c as HTMLElement
-      const r = el.getBoundingClientRect()
-      const d = Math.abs(r.left + r.width / 2 - cx)
+    const shift = pp * scrollRange
+    projCardMeta.forEach(({ el, centerX }) => {
+      const screenX = centerX - shift
+      const d = Math.abs(screenX - cx)
       const tt = Math.min(1, d / (vw * 0.55))
       el.style.opacity = (1 - tt * 0.55).toFixed(3)
       el.style.transform = `scale(${(1 - tt * 0.08).toFixed(3)})`

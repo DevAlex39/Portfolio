@@ -149,6 +149,9 @@ section a[data-magnetic]:hover {
 [data-proj-inner] {
   will-change: transform;
 }
+[data-proj-card] {
+  will-change: transform, opacity;
+}
 [data-magnetic] {
   will-change: transform;
 }
