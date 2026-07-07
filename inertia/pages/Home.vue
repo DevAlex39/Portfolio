@@ -436,13 +436,6 @@ let lightFx = false
    carte projet : evite un querySelectorAll + getBoundingClientRect par
    carte a CHAQUE frame de scroll pendant tout le defilement horizontal */
 let projCardMeta: { el: HTMLElement; centerX: number }[] = []
-/* Longueur du fil conducteur + rect du calque fixe (position:fixed, ne
-   bouge pas au scroll) : mis en cache pour eviter de recalculer une
-   geometrie SVG couteuse (getTotalLength) a chaque frame de scroll */
-let trailLen = 0
-let trailRectCache = { left: 0, top: 0, width: 0, height: 0 }
-let mountLen = 0
-let mountainHCache = 0
 let mx = 0
 let my = 0
 let ringX = 0
@@ -493,14 +486,6 @@ function layoutProjects() {
     return { el, centerX: el.offsetLeft + el.offsetWidth / 2 }
   })
 
-  /* Cache : la longueur du chemin de crete et la hauteur du massif ne
-     changent qu'au resize, pas a chaque frame de scroll */
-  const mountPath = projMountPathEl.value
-  if (mountPath) {
-    mountLen = mountPath.getTotalLength()
-    const mt = mountPath.closest('.proj-mountains') as HTMLElement | null
-    mountainHCache = mt ? mt.clientHeight : vh * 0.42
-  }
 }
 
 function onResize() {
@@ -527,10 +512,6 @@ function buildCheckpoints() {
   const len = path.getTotalLength()
   const w = trail.clientWidth,
     h = trail.clientHeight
-  /* Cache : trail est position:fixed, sa geometrie ne change qu'au resize */
-  trailLen = len
-  const tRect = trail.getBoundingClientRect()
-  trailRectCache = { left: tRect.left, top: tRect.top, width: w, height: h }
   const sx = w / 120,
     sy = h / 1000
   checkpoints = sectionDefs.map((def) => {
@@ -619,10 +600,10 @@ function update(initial: boolean) {
     path = pathEl.value,
     runner = runnerEl.value
   if (path && runner && trail) {
-    const len = trailLen || path.getTotalLength()
+    const len = path.getTotalLength()
     const pt = path.getPointAtLength(p * len)
-    const w = trailRectCache.width || trail.clientWidth,
-      h = trailRectCache.height || trail.clientHeight
+    const w = trail.clientWidth,
+      h = trail.clientHeight
     const sx = w / 120,
       sy = h / 1000
     const x = pt.x * sx,
@@ -808,20 +789,23 @@ function updateProjects(vh: number, p: number) {
   const eEntry = entry * entry * (3 - 2 * entry)
 
   const mountPath = projMountPathEl.value
-  const mh = mountainHCache || vh * 0.42
+  const mt = mountPath ? (mountPath.closest('.proj-mountains') as HTMLElement | null) : null
+  const mh = mt ? mt.clientHeight : vh * 0.42
   const mTop = vh - mh
-  const len = mountLen || 1
+  const len = mountPath ? mountPath.getTotalLength() : 1
   const ridgePt = mountPath ? mountPath.getPointAtLength(pp * len) : { x: 0, y: 0 }
   const Rm = { x: (ridgePt.x / 1000) * vw, y: mTop + (ridgePt.y / 300) * mh }
 
   let Cv = Rm
   const trail = trailEl.value,
     path = pathEl.value
-  if (trailLen && path) {
-    const ptv = path.getPointAtLength((p || 0) * trailLen)
+  if (trail && path) {
+    const tr = trail.getBoundingClientRect()
+    const lenV = path.getTotalLength()
+    const ptv = path.getPointAtLength((p || 0) * lenV)
     Cv = {
-      x: trailRectCache.left + ptv.x * (trailRectCache.width / 120),
-      y: trailRectCache.top + ptv.y * (trailRectCache.height / 1000),
+      x: tr.left + ptv.x * (trail.clientWidth / 120),
+      y: tr.top + ptv.y * (trail.clientHeight / 1000),
     }
   }
   /* Position du coureur des cretes : interpolee vers le fil conducteur
