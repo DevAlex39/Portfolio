@@ -13,4 +13,16 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   SESSION_DRIVER: Env.schema.enum(['cookie', 'memory'] as const),
+
+  /*
+  |----------------------------------------------------------
+  | Variables for sending the contact-form email (optional : le
+  | formulaire refuse l'envoi tant qu'elles ne sont pas renseignees)
+  |----------------------------------------------------------
+  */
+  SMTP_HOST: Env.schema.string.optional(),
+  SMTP_PORT: Env.schema.number.optional(),
+  SMTP_USER: Env.schema.string.optional(),
+  SMTP_PASS: Env.schema.string.optional(),
+  CONTACT_TO_EMAIL: Env.schema.string.optional(),
 })

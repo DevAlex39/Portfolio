@@ -320,6 +320,9 @@ const enBtnStyle = computed(() => (lang.value === 'en' ? activeBtn : idleBtn))
  * ------------------------------------------------------------------------ */
 const form = useForm({ name: '', email: '', message: '' })
 const errors = reactive<{ name?: string; email?: string; message?: string }>({})
+/* Erreur d'envoi serveur (SMTP absent/echec) : flashee sous une cle
+   dediee cote controleur, hors du typage strict de useForm */
+const sendError = computed(() => (form.errors as Record<string, string>).send)
 
 const submitBase =
   "padding:0.95rem; border:none; border-radius:10px; font-size:0.88rem; font-weight:600; letter-spacing:0.08em; text-transform:uppercase; cursor:pointer; transition:opacity .2s, transform .2s; color:#fff; font-family:'Space Grotesk',sans-serif;"
@@ -415,6 +418,7 @@ const eduFillEl = ref<HTMLElement | null>(null)
 const proFillEl = ref<HTMLElement | null>(null)
 const introOn = ref(false)
 const langFade = ref(false)
+const mobileNavOpen = ref(false)
 
 /* engine state */
 let reduce = false
@@ -1309,7 +1313,7 @@ const trailPath =
         <span style="background: linear-gradient(100deg, #74c69d, #eef2ef 60%, #f87171); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent">AlpaStudio</span>
       </span>
       <div style="display: flex; align-items: center; gap: clamp(1rem, 2.5vw, 2rem)">
-        <ul style="list-style: none; display: flex; gap: clamp(0.7rem, 1.5vw, 1.5rem); align-items: center">
+        <ul class="nav-links" style="list-style: none; display: flex; gap: clamp(0.7rem, 1.5vw, 1.5rem); align-items: center">
           <li v-for="(n, i) in navLinks" :key="i">
             <a :href="n.href" style="color: #cbd6cf; text-decoration: none; font-size: 0.74rem; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 500; white-space: nowrap; transition: color 0.2s">{{ n.label }}</a>
           </li>
@@ -1318,6 +1322,20 @@ const trailPath =
           <button :style="frBtnStyle" @click="setLang('fr')">FR</button>
           <button :style="enBtnStyle" @click="setLang('en')">EN</button>
         </div>
+        <button
+          class="nav-burger"
+          :class="{ open: mobileNavOpen }"
+          :aria-expanded="mobileNavOpen"
+          aria-label="Menu"
+          @click="mobileNavOpen = !mobileNavOpen"
+        >
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+
+      <!-- Menu mobile -->
+      <div class="mobile-nav" :class="{ open: mobileNavOpen }">
+        <a v-for="(n, i) in navLinks" :key="i" :href="n.href" @click="mobileNavOpen = false">{{ n.label }}</a>
       </div>
     </nav>
 
@@ -1692,6 +1710,7 @@ const trailPath =
               <textarea v-model="form.message" @input="delete errors.message" :placeholder="t.phMsg" :style="msgInputStyle"></textarea>
               <span v-if="errors.message" style="color: #f87171; font-size: 0.72rem; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em">{{ errors.message }}</span>
             </div>
+            <span v-if="sendError" style="color: #f87171; font-size: 0.78rem; font-family: 'JetBrains Mono', monospace; letter-spacing: 0.04em">{{ sendError }}</span>
             <button type="submit" data-magnetic :style="submitStyle">{{ submitLabel }}</button>
           </form>
         </div>
