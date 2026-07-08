@@ -25,4 +25,14 @@ export default await Env.create(new URL('../', import.meta.url), {
   SMTP_USER: Env.schema.string.optional(),
   SMTP_PASS: Env.schema.string.optional(),
   CONTACT_TO_EMAIL: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Analytics maison (page /stats) : cookie-free, fichier local.
+  | ANALYTICS_DIR doit pointer HORS du dossier build/ en prod
+  | (build/ est efface a chaque deploiement).
+  |----------------------------------------------------------
+  */
+  ANALYTICS_DIR: Env.schema.string.optional(),
+  STATS_TOKEN: Env.schema.string.optional(),
 })

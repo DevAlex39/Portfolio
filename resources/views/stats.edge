@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Statistiques — AlpaStudio</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        background: #08080a;
+        color: #eef2ef;
+        padding: clamp(1.2rem, 4vw, 3rem);
+      }
+      h1 {
+        font-size: 1.4rem;
+        margin: 0 0 1.8rem;
+        letter-spacing: 0.02em;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin-bottom: 2.4rem;
+      }
+      .stat {
+        background: linear-gradient(160deg, rgba(82,183,136,0.08), rgba(255,255,255,0.02));
+        border: 1px solid rgba(82,183,136,0.18);
+        border-radius: 14px;
+        padding: 1.1rem 1.3rem;
+      }
+      .stat .value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: #74c69d;
+      }
+      .stat .label {
+        font-size: 0.72rem;
+        color: #9fb3aa;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        margin-top: 0.3rem;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 2.4rem;
+        font-size: 0.85rem;
+      }
+      th, td {
+        text-align: left;
+        padding: 0.5rem 0.8rem;
+        border-bottom: 1px solid rgba(255,255,255,0.08);
+      }
+      th {
+        color: #74c69d;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        letter-spacing: 0.06em;
+      }
+      h2 {
+        font-size: 0.95rem;
+        color: #48cae4;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0 0 0.8rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>📊 alpastudio.fr — statistiques</h1>
+
+    <div class="grid">
+      <div class="stat"><div class="value">{{ total }}</div><div class="label">Total (depuis le log)</div></div>
+      <div class="stat"><div class="value">{{ today }}</div><div class="label">Aujourd'hui</div></div>
+      <div class="stat"><div class="value">{{ last7 }}</div><div class="label">7 derniers jours</div></div>
+      <div class="stat"><div class="value">{{ last30 }}</div><div class="label">30 derniers jours</div></div>
+    </div>
+
+    <h2>Visites par jour (14 derniers)</h2>
+    <table>
+      <thead><tr><th>Date</th><th>Visites</th></tr></thead>
+      <tbody>
+        @each(row in dailyTrend)
+          <tr><td>{{ row.key }}</td><td>{{ row.value }}</td></tr>
+        @end
+        @if(dailyTrend.length === 0)
+          <tr><td colspan="2">Aucune donnée pour le moment.</td></tr>
+        @end
+      </tbody>
+    </table>
+
+    <h2>Appareils</h2>
+    <table>
+      <thead><tr><th>Type</th><th>Visites</th></tr></thead>
+      <tbody>
+        @each(row in byDevice)
+          <tr><td>{{ row.key }}</td><td>{{ row.value }}</td></tr>
+        @end
+      </tbody>
+    </table>
+
+    <h2>Provenance</h2>
+    <table>
+      <thead><tr><th>Domaine</th><th>Visites</th></tr></thead>
+      <tbody>
+        @each(row in topReferrers)
+          <tr><td>{{ row.key }}</td><td>{{ row.value }}</td></tr>
+        @end
+      </tbody>
+    </table>
+  </body>
+</html>

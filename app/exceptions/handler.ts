@@ -13,6 +13,16 @@ export default class HttpExceptionHandler extends ExceptionHandler {
    * response to the client
    */
   async handle(error: unknown, ctx: HttpContext) {
+    const status = (error as { status?: number })?.status
+    const code = (error as { code?: string })?.code
+
+    if (code === 'E_ROUTE_NOT_FOUND' || status === 404) {
+      ctx.response.status(404)
+      const body = await ctx.inertia.render('NotFound')
+      if (body !== undefined) ctx.response.send(body)
+      return
+    }
+
     return super.handle(error, ctx)
   }
 
