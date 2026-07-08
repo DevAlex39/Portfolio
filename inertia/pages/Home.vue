@@ -782,6 +782,21 @@ function updateProjects(vh: number, p: number) {
   track.style.transform = `translateX(${-pp * scrollRange}px)`
   if (projBackEl.value) projBackEl.value.style.transform = `translateX(${-pp * scrollRange * 0.25}px)`
 
+  /* Le reste (geometrie SVG, soleil/lune, cartes) ne sert a rien tant que
+     la section n'est pas a l'ecran : evite un cout de calcul/layout sur
+     TOUTE la page pour une section qui n'est visible qu'un temps donne.
+     On remet juste le fil conducteur/coureur vertical dans leur etat de
+     repos (visibles) avant de sortir, comme le ferait !inSection plus bas. */
+  if (!near) {
+    if (trailEl.value) {
+      trailEl.value.style.opacity = '1'
+      trailEl.value.style.clipPath = 'none'
+    }
+    if (runnerEl.value) runnerEl.value.style.opacity = '1'
+    if (projRunnerEl.value) projRunnerEl.value.style.opacity = '0'
+    return
+  }
+
   let entry = 0,
     exit = 0
   if (local >= 0 && local <= scrollRange) {
@@ -792,13 +807,22 @@ function updateProjects(vh: number, p: number) {
   const eExit = exit * exit * (3 - 2 * exit)
   const eEntry = entry * entry * (3 - 2 * entry)
 
+  /* Position du massif mesuree directement (getBoundingClientRect), pas
+     deduite de vh : sur mobile, la hauteur CSS (100vh, evaluee par le
+     navigateur selon SA propre definition) et window.innerHeight lu en JS
+     divergent transitoirement quand la barre d'adresse se retracte au
+     scroll — un calcul via vh decalait alors le coureur par rapport au
+     dessin reel des cretes. Une mesure directe est toujours exacte. */
   const mountPath = projMountPathEl.value
   const mt = mountPath ? (mountPath.closest('.proj-mountains') as HTMLElement | null) : null
-  const mh = mt ? mt.clientHeight : vh * 0.42
-  const mTop = vh - mh
+  const mRect = mt ? mt.getBoundingClientRect() : null
+  const mh = mRect ? mRect.height : vh * 0.42
+  const mTop = mRect ? mRect.top : vh - mh
+  const mLeft = mRect ? mRect.left : 0
+  const mWidth = mRect ? mRect.width : vw
   const len = mountPath ? mountPath.getTotalLength() : 1
   const ridgePt = mountPath ? mountPath.getPointAtLength(pp * len) : { x: 0, y: 0 }
-  const Rm = { x: (ridgePt.x / 1000) * vw, y: mTop + (ridgePt.y / 300) * mh }
+  const Rm = { x: mLeft + (ridgePt.x / 1000) * mWidth, y: mTop + (ridgePt.y / 300) * mh }
 
   let Cv = Rm
   const trail = trailEl.value,
