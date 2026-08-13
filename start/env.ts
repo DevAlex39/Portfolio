@@ -34,5 +34,13 @@ export default await Env.create(new URL('../', import.meta.url), {
   |----------------------------------------------------------
   */
   ANALYTICS_DIR: Env.schema.string.optional(),
-  STATS_TOKEN: Env.schema.string.optional(),
+
+  /*
+  |----------------------------------------------------------
+  | Identifiants de connexion a la page /stats (login par
+  | session, voir StatsAuthController)
+  |----------------------------------------------------------
+  */
+  STATS_USERNAME: Env.schema.string.optional(),
+  STATS_PASSWORD: Env.schema.string.optional(),
 })

@@ -20,14 +20,14 @@ function refDomain(ref: string | null) {
 
 /**
  * Tiny read-only stats view over the pageview log written by
- * `track_visit_middleware`. Gated by a token (STATS_TOKEN) passed as
- * `?token=...` — not linked from the site, kept simple on purpose.
+ * `track_visit_middleware`. Gated by a session-based login (see
+ * StatsAuthController) — credentials live only in the server's .env
+ * (STATS_USERNAME / STATS_PASSWORD), never in git.
  */
 export default class StatsController {
-  async show({ request, response, view }: HttpContext) {
-    const token = env.get('STATS_TOKEN')
-    if (!token || request.qs().token !== token) {
-      return response.status(404).send('Not found')
+  async show({ session, response, view }: HttpContext) {
+    if (!session.get('stats_authed')) {
+      return response.redirect('/stats/login')
     }
 
     let lines: string[] = []

@@ -72,7 +72,15 @@
     </style>
   </head>
   <body>
-    <h1>📊 alpastudio.fr — statistiques</h1>
+    <h1 style="display: flex; align-items: center; justify-content: space-between; gap: 1rem; flex-wrap: wrap">
+      <span>📊 alpastudio.fr — statistiques</span>
+      <form method="POST" action="/stats/logout" style="margin: 0">
+        {{ csrfField() }}
+        <button type="submit" style="background: transparent; border: 1px solid rgba(255,255,255,0.18); color: #9fb3aa; font-family: inherit; font-size: 0.7rem; padding: 0.4rem 0.9rem; border-radius: 999px; cursor: pointer; text-transform: uppercase; letter-spacing: 0.05em">
+          Déconnexion
+        </button>
+      </form>
+    </h1>
 
     <div class="grid">
       <div class="stat"><div class="value">{{ total }}</div><div class="label">Total (depuis le log)</div></div>
