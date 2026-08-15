@@ -22,12 +22,27 @@ function deviceFromUA(ua: string) {
   return 'desktop'
 }
 
+/**
+ * Heuristic to weed out scripts/scanners that spoof a normal browser
+ * User-Agent (vulnerability scanners routinely do). Real browsers
+ * reliably send both of these on a top-level navigation ; curl,
+ * headless scripts and most scanners send neither.
+ */
+function looksLikeRealBrowser(request: HttpContext['request']) {
+  const ua = request.header('user-agent') || ''
+  if (/bot|crawl|spider|slurp|facebookexternalhit|preview|curl|wget|python|scan/i.test(ua)) {
+    return false
+  }
+  if (!request.header('accept-language')) return false
+  if (!request.header('sec-fetch-mode')) return false
+  return true
+}
+
 export default class TrackVisitMiddleware {
   async handle({ request }: HttpContext, next: NextFn) {
     const ua = request.header('user-agent') || ''
-    const isBot = /bot|crawl|spider|slurp|facebookexternalhit|preview/i.test(ua)
 
-    if (!isBot) {
+    if (looksLikeRealBrowser(request)) {
       const line =
         JSON.stringify({
           t: new Date().toISOString(),
