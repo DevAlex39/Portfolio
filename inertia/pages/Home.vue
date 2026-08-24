@@ -421,6 +421,10 @@ const projCounterEl = ref<HTMLElement | null>(null)
 const projBarEl = ref<HTMLElement | null>(null)
 const cursorDotEl = ref<HTMLElement | null>(null)
 const cursorRingEl = ref<HTMLElement | null>(null)
+const ridgeSkillsEl = ref<HTMLElement | null>(null)
+const ridgeProjectsEl = ref<HTMLElement | null>(null)
+const ridgeCreationsEl = ref<HTMLElement | null>(null)
+const ridgeContactEl = ref<HTMLElement | null>(null)
 const projDayEl = ref<HTMLElement | null>(null)
 const projSunsetEl = ref<HTMLElement | null>(null)
 const projNightEl = ref<HTMLElement | null>(null)
@@ -560,6 +564,29 @@ function buildCheckpoints() {
     return { el, label, bar, p, on: false, finish: !!def.finish, def }
   })
   cpLang = l
+  updateRidgeColors()
+}
+
+/* Bandes de crete entre certaines sections : teintees selon la meme
+   progression verte -> rouge que le coureur/fil conducteur, pour une
+   transition plus marquee sans toucher aux degrades deja regles de
+   chaque section. */
+function updateRidgeColors() {
+  const root = rootEl.value
+  if (!root) return
+  const max = root.offsetHeight - window.innerHeight
+  const ridges: (HTMLElement | null)[] = [
+    ridgeSkillsEl.value,
+    ridgeProjectsEl.value,
+    ridgeCreationsEl.value,
+    ridgeContactEl.value,
+  ]
+  for (const el of ridges) {
+    if (!el) continue
+    const p = max > 0 ? Math.min(1, Math.max(0, el.offsetTop / max)) : 0
+    const shape = el.querySelector('.ridge-shape') as HTMLElement | null
+    if (shape) shape.style.background = runnerColor(p)
+  }
 }
 
 function onScroll() {
@@ -1510,6 +1537,8 @@ const trailPath =
       </div>
     </section>
 
+    <div ref="ridgeSkillsEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
+
     <!-- Expériences -->
     <section id="experiences" data-screen-label="Expériences" style="position: relative; background: linear-gradient(180deg, #0e131e 0%, #15121d 55%, #1a0f15 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">
       <div style="max-width: 880px; margin: 0 auto">
@@ -1556,6 +1585,8 @@ const trailPath =
         </div>
       </div>
     </section>
+
+    <div ref="ridgeProjectsEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
 
     <!-- Projets (scroll horizontal épinglé) -->
     <section id="projets" data-screen-label="Projets" ref="projSectionEl" class="proj-section" style="position: relative; background: linear-gradient(180deg, #1a0f15 0%, #0c1a23 34%, #0a1c18 70%, #1a0f15 100%)">
@@ -1670,6 +1701,8 @@ const trailPath =
       </div>
     </section>
 
+    <div ref="ridgeCreationsEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
+
     <!-- Créations -->
     <section id="creations" data-screen-label="Créations" style="position: relative; background: linear-gradient(180deg, #170a0d 0%, #10141c 55%, #0d0709 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">
       <div style="max-width: 1080px; margin: 0 auto">
@@ -1712,6 +1745,8 @@ const trailPath =
         </div>
       </div>
     </section>
+
+    <div ref="ridgeContactEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
 
     <!-- Contact -->
     <section id="contact" data-screen-label="Contact" style="position: relative; background: linear-gradient(180deg, #170a0d 0%, #0d0709 60%, #08080a 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">

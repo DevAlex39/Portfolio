@@ -1090,3 +1090,26 @@ footer {
     background: rgba(8, 8, 10, 0.94) !important;
   }
 }
+
+/* --- Bandes de crete entre sections (transitions) --- */
+.ridge-divider {
+  position: relative;
+  height: clamp(64px, 11vh, 130px);
+  overflow: hidden;
+  z-index: 3;
+  pointer-events: none;
+}
+.ridge-shape {
+  position: absolute;
+  inset: -12% -3%;
+  -webkit-mask-image: url(/mountains-near.webp);
+  mask-image: url(/mountains-near.webp);
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  transition: background-color 0.6s ease;
+  opacity: 0.92;
+}
