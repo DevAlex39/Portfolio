@@ -71,6 +71,7 @@ const DICT = {
     creationsTitle: 'Créations',
     creationsIntro: 'Des projets perso menés de A à Z, pour le plaisir de coder autre chose et d’explorer de nouvelles technos.',
     creationsCta: 'Visiter le site',
+    creationsSoon: 'Bientôt disponible',
     aboutLabel: 'Qui suis-je ?',
     aboutTitle: 'À propos',
     aboutP1:
@@ -121,6 +122,7 @@ const DICT = {
     creationsTitle: 'Creations',
     creationsIntro: 'Personal projects built from scratch, for the fun of coding something different and exploring new tech.',
     creationsCta: 'Visit the site',
+    creationsSoon: 'Coming soon',
     aboutLabel: 'Who am I?',
     aboutTitle: 'About',
     aboutP1:
@@ -292,6 +294,18 @@ const creations = computed(() => {
         : 'An online arcade room: Yahtzee, Skyjo, Petits Chevaux, Motus and more, playable in real time with friends.',
       tags: f ? ['Vue.js', 'Socket.io', 'Temps réel'] : ['Vue.js', 'Socket.io', 'Real-time'],
       accent: '#48cae4',
+    },
+    {
+      icon: '🧬',
+      name: 'XENOGRAFT',
+      url: null,
+      domain: f ? 'Roguelike solo & gacha' : 'Solo roguelike & gacha',
+      desc: f
+        ? 'Un roguelike original : greffez des parties de créatures sur un monstre unique qui s’assemble au fil de la run, invoquez de nouvelles pièces via un portail interdimensionnel.'
+        : 'An original roguelike: graft creature parts onto a single monster that assembles itself run after run, summon new pieces through an interdimensional portal.',
+      tags: f ? ['Vue.js', 'Node.js', 'MySQL'] : ['Vue.js', 'Node.js', 'MySQL'],
+      accent: '#9b30ff',
+      comingSoon: true,
     },
   ]
 })
@@ -1665,18 +1679,23 @@ const trailPath =
         <p data-rv="up" data-rv-d="120" style="color: #9fb3aa; max-width: 620px; line-height: 1.7; margin-bottom: 2.8rem">{{ t.creationsIntro }}</p>
 
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 1.6rem">
-          <a
+          <component
+            :is="cr.url ? 'a' : 'div'"
             v-for="(cr, i) in creations"
             :key="i"
-            :href="cr.url"
-            target="_blank"
-            rel="noopener"
+            :href="cr.url || undefined"
+            :target="cr.url ? '_blank' : undefined"
+            :rel="cr.url ? 'noopener' : undefined"
             class="skill-card"
             data-rv="up"
             data-rv-stagger
-            :style="'display:block; text-decoration:none; position:relative; overflow:hidden; background:linear-gradient(160deg, ' + cr.accent + '14, rgba(255,255,255,0.02)); border:1px solid ' + cr.accent + '33; border-radius:18px; padding:clamp(1.6rem, 3vw, 2.2rem); transition:border-color .3s, transform .3s, box-shadow .3s;'"
+            :style="'display:block; text-decoration:none; position:relative; overflow:hidden; background:linear-gradient(160deg, ' + cr.accent + '14, rgba(255,255,255,0.02)); border:1px solid ' + cr.accent + '33; border-radius:18px; padding:clamp(1.6rem, 3vw, 2.2rem); transition:border-color .3s, transform .3s, box-shadow .3s;' + (cr.comingSoon ? ' opacity:0.88;' : '')"
           >
             <span class="proj-watermark" aria-hidden="true">{{ cr.icon }}</span>
+            <span
+              v-if="cr.comingSoon"
+              :style="'position:absolute; top:1.2rem; right:1.2rem; padding:0.3rem 0.7rem; border-radius:999px; font-size:0.66rem; font-family:\'JetBrains Mono\', monospace; letter-spacing:0.06em; text-transform:uppercase; background:' + cr.accent + '1f; border:1px solid ' + cr.accent + '45; color:' + cr.accent"
+            >{{ t.creationsSoon }}</span>
             <div style="display: flex; align-items: center; gap: 0.9rem; margin-bottom: 1.1rem">
               <span :style="'width:48px; height:48px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; background:' + cr.accent + '1f; border:1px solid ' + cr.accent + '40'">{{ cr.icon }}</span>
               <div>
@@ -1688,8 +1707,8 @@ const trailPath =
             <div style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.4rem">
               <span v-for="(tg, j) in cr.tags" :key="j" :style="'padding:0.32rem 0.8rem; border-radius:8px; font-size:0.72rem; background:' + cr.accent + '14; border:1px solid ' + cr.accent + '30; color:#eef2ef'">{{ tg }}</span>
             </div>
-            <span :style="'display:inline-flex; align-items:center; gap:0.5rem; font-family:\'Space Grotesk\', sans-serif; font-weight:600; font-size:0.9rem; color:' + cr.accent">{{ t.creationsCta }} <span>↗</span></span>
-          </a>
+            <span v-if="cr.url" :style="'display:inline-flex; align-items:center; gap:0.5rem; font-family:\'Space Grotesk\', sans-serif; font-weight:600; font-size:0.9rem; color:' + cr.accent">{{ t.creationsCta }} <span>↗</span></span>
+          </component>
         </div>
       </div>
     </section>
