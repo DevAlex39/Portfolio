@@ -1092,18 +1092,21 @@ footer {
 }
 
 /* --- Bandes de crete entre sections (transitions) --- */
+/* Hauteur calee sur l'aspect ratio reel de mountains-ridge.webp
+   (1584x260 = 6.09:1) pour eviter tout etirement : height suit vw,
+   pas vh, comme la largeur, donc le ratio reste correct a toute taille. */
 .ridge-divider {
   position: relative;
-  height: clamp(64px, 11vh, 130px);
+  height: clamp(80px, 16.4vw, 220px);
   overflow: hidden;
   z-index: 3;
   pointer-events: none;
 }
 .ridge-shape {
   position: absolute;
-  inset: -12% -3%;
-  -webkit-mask-image: url(/mountains-near.webp);
-  mask-image: url(/mountains-near.webp);
+  inset: 0;
+  -webkit-mask-image: url(/mountains-ridge.webp);
+  mask-image: url(/mountains-ridge.webp);
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
