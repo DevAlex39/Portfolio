@@ -584,8 +584,10 @@ function updateRidgeColors() {
   for (const el of ridges) {
     if (!el) continue
     const p = max > 0 ? Math.min(1, Math.max(0, el.offsetTop / max)) : 0
-    const shape = el.querySelector('.ridge-shape') as HTMLElement | null
-    if (shape) shape.style.background = runnerColor(p)
+    const col = runnerColor(p)
+    el.querySelectorAll('.ridge-shape').forEach((shape) => {
+      ;(shape as HTMLElement).style.background = col
+    })
   }
 }
 
@@ -1537,7 +1539,11 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeSkillsEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
+    <div ref="ridgeSkillsEl" class="ridge-divider" aria-hidden="true">
+      <div class="ridge-shape far"></div>
+      <div class="ridge-shape mid"></div>
+      <div class="ridge-shape near"></div>
+    </div>
 
     <!-- Expériences -->
     <section id="experiences" data-screen-label="Expériences" style="position: relative; background: linear-gradient(180deg, #0e131e 0%, #15121d 55%, #1a0f15 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">
@@ -1586,7 +1592,11 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeProjectsEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
+    <div ref="ridgeProjectsEl" class="ridge-divider" aria-hidden="true">
+      <div class="ridge-shape far"></div>
+      <div class="ridge-shape mid"></div>
+      <div class="ridge-shape near"></div>
+    </div>
 
     <!-- Projets (scroll horizontal épinglé) -->
     <section id="projets" data-screen-label="Projets" ref="projSectionEl" class="proj-section" style="position: relative; background: linear-gradient(180deg, #1a0f15 0%, #0c1a23 34%, #0a1c18 70%, #1a0f15 100%)">
@@ -1701,7 +1711,11 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeCreationsEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
+    <div ref="ridgeCreationsEl" class="ridge-divider" aria-hidden="true">
+      <div class="ridge-shape far"></div>
+      <div class="ridge-shape mid"></div>
+      <div class="ridge-shape near"></div>
+    </div>
 
     <!-- Créations -->
     <section id="creations" data-screen-label="Créations" style="position: relative; background: linear-gradient(180deg, #170a0d 0%, #10141c 55%, #0d0709 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">
@@ -1746,7 +1760,11 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeContactEl" class="ridge-divider" aria-hidden="true"><div class="ridge-shape"></div></div>
+    <div ref="ridgeContactEl" class="ridge-divider" aria-hidden="true">
+      <div class="ridge-shape far"></div>
+      <div class="ridge-shape mid"></div>
+      <div class="ridge-shape near"></div>
+    </div>
 
     <!-- Contact -->
     <section id="contact" data-screen-label="Contact" style="position: relative; background: linear-gradient(180deg, #170a0d 0%, #0d0709 60%, #08080a 100%); padding: 6rem clamp(1.2rem, 5vw, 3rem)">

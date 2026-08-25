@@ -1102,17 +1102,40 @@ footer {
   z-index: 3;
   pointer-events: none;
 }
+/* Trois calques empiles pour une vraie profondeur (perspective
+   atmospherique : le plus lointain est le plus clair/discret, le plus
+   proche le plus sombre/detaille) — memes proportions que le calque
+   sur lequel elles sont recadrees, donc pas de re-etirement. */
 .ridge-shape {
   position: absolute;
-  inset: 0;
-  -webkit-mask-image: url(/mountains-ridge.webp);
-  mask-image: url(/mountains-ridge.webp);
+  left: 0;
+  right: 0;
+  bottom: 0;
+  transition: background-color 0.6s ease;
+}
+.ridge-shape.far {
+  height: 100%;
+  opacity: 0.35;
+  -webkit-mask-image: url(/mountains-ridge-far.webp);
+  mask-image: url(/mountains-ridge-far.webp);
+}
+.ridge-shape.mid {
+  height: 100%;
+  opacity: 0.62;
+  -webkit-mask-image: url(/mountains-ridge-mid.webp);
+  mask-image: url(/mountains-ridge-mid.webp);
+}
+.ridge-shape.near {
+  height: 100%;
+  opacity: 0.95;
+  -webkit-mask-image: url(/mountains-ridge-near.webp);
+  mask-image: url(/mountains-ridge-near.webp);
+}
+.ridge-shape {
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
-  -webkit-mask-position: center;
-  mask-position: center;
-  transition: background-color 0.6s ease;
-  opacity: 0.92;
+  -webkit-mask-position: center bottom;
+  mask-position: center bottom;
 }
