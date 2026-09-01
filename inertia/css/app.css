@@ -1092,12 +1092,23 @@ footer {
 }
 
 /* --- Bandes de crete entre sections (transitions) --- */
-/* Hauteur calee sur l'aspect ratio reel de mountains-ridge.webp
-   (1584x260 = 6.09:1) pour eviter tout etirement : height suit vw,
-   pas vh, comme la largeur, donc le ratio reste correct a toute taille. */
+/* Hauteur calee sur l'aspect ratio reel des calques recadres
+   (1584x603 = 2.627:1, memes proportions sur les 3 calques pour rester
+   alignes entre eux). `aspect-ratio` remplace l'ancien calcul en vw
+   avec un plafond en px : ce plafond faisait que sur tout ecran de
+   bureau (> ~1000px de large), la hauteur restait bloquee a 380px alors
+   que la largeur continuait de suivre 100% du viewport — d'ou l'effet
+   "montagnes ecrasees" en aplatissant le ratio 2.627:1 jusqu'a 5:1+.
+   `aspect-ratio` garantit le bon ratio a toute largeur, sans jamais
+   dependre d'une valeur fixe en px. Le max-width limite juste la taille
+   absolue sur les tres grands ecrans, en gardant les deux dimensions
+   liees (donc toujours sans etirement). */
 .ridge-divider {
   position: relative;
-  height: clamp(80px, 16.4vw, 220px);
+  width: 100%;
+  max-width: 1800px;
+  margin: 0 auto;
+  aspect-ratio: 1584 / 603;
   overflow: hidden;
   z-index: 3;
   pointer-events: none;
@@ -1105,28 +1116,32 @@ footer {
 /* Trois calques empiles pour une vraie profondeur (perspective
    atmospherique : le plus lointain est le plus clair/discret, le plus
    proche le plus sombre/detaille) — memes proportions que le calque
-   sur lequel elles sont recadrees, donc pas de re-etirement. */
+   sur lequel elles sont recadrees, donc pas de re-etirement.
+   Debordement de 15% sur les 4 cotes (via left/right/bottom negatifs +
+   height 130%) : reserve de la marge pour le parallax (translateY en JS)
+   sans jamais reveler de bord vide, tout en gardant le meme ratio
+   largeur/hauteur donc sans re-etirement (les deux axes sont agrandis
+   du meme facteur). */
 .ridge-shape {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  left: -22%;
+  right: -22%;
+  bottom: -22%;
+  height: 144%;
   transition: background-color 0.6s ease;
+  will-change: transform;
 }
 .ridge-shape.far {
-  height: 100%;
   opacity: 0.35;
   -webkit-mask-image: url(/mountains-ridge-far.webp);
   mask-image: url(/mountains-ridge-far.webp);
 }
 .ridge-shape.mid {
-  height: 100%;
   opacity: 0.62;
   -webkit-mask-image: url(/mountains-ridge-mid.webp);
   mask-image: url(/mountains-ridge-mid.webp);
 }
 .ridge-shape.near {
-  height: 100%;
   opacity: 0.95;
   -webkit-mask-image: url(/mountains-ridge-near.webp);
   mask-image: url(/mountains-ridge-near.webp);

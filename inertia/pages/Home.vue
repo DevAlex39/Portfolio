@@ -565,6 +565,7 @@ function buildCheckpoints() {
   })
   cpLang = l
   updateRidgeColors()
+  buildRidgeParallax()
 }
 
 /* Bandes de crete entre certaines sections : teintees selon la meme
@@ -588,6 +589,54 @@ function updateRidgeColors() {
     el.querySelectorAll('.ridge-shape').forEach((shape) => {
       ;(shape as HTMLElement).style.background = col
     })
+  }
+}
+
+/* Parallax local des bandes de crete : chaque calque (far/mid/near) se
+   deplace a une vitesse differente pendant que sa bande traverse la
+   fenetre, pour un vrai effet de profondeur 3D au scroll. On ne peut
+   pas reutiliser le tableau `parallax` generique (base sur le scroll
+   global `y`, adapte a des elements proches du haut de page) : ici
+   chaque bande est loin dans la page, donc on calcule un decalage
+   LOCAL par bande (offsetTop mis en cache, pas de lecture DOM par
+   frame) et on le limite (clamp) a la marge de debordement CSS (15%
+   du cote via .ridge-shape) pour ne jamais reveler de bord vide. */
+let ridgeParallax: { el: HTMLElement; offsetTop: number; speed: number; maxShift: number }[] = []
+const RIDGE_SPEEDS: Record<string, number> = { far: 0.08, mid: 0.2, near: 0.4 }
+// Le debordement CSS (.ridge-shape) est de 22% de la hauteur de la bande ;
+// on limite le decalage a 18% de cette meme hauteur (mesuree par bande,
+// pas une valeur fixe en px) pour ne jamais reveler de bord vide, quelle
+// que soit la taille d'ecran.
+const RIDGE_MAX_SHIFT_RATIO = 0.18
+
+function buildRidgeParallax() {
+  ridgeParallax = []
+  const ridges: (HTMLElement | null)[] = [
+    ridgeSkillsEl.value,
+    ridgeProjectsEl.value,
+    ridgeCreationsEl.value,
+    ridgeContactEl.value,
+  ]
+  for (const el of ridges) {
+    if (!el) continue
+    const maxShift = el.offsetHeight * RIDGE_MAX_SHIFT_RATIO
+    el.querySelectorAll<HTMLElement>('.ridge-shape').forEach((shape) => {
+      const speed = shape.classList.contains('far')
+        ? RIDGE_SPEEDS.far
+        : shape.classList.contains('mid')
+          ? RIDGE_SPEEDS.mid
+          : RIDGE_SPEEDS.near
+      ridgeParallax.push({ el: shape, offsetTop: el.offsetTop, speed, maxShift })
+    })
+  }
+}
+
+function updateRidgeParallax(y: number, vh: number) {
+  if (!ridgeParallax.length) return
+  for (const q of ridgeParallax) {
+    const local = y - q.offsetTop + vh - vh * 0.5
+    const shift = Math.max(-q.maxShift, Math.min(q.maxShift, local * q.speed))
+    q.el.style.transform = `translateY(${shift}px)`
   }
 }
 
@@ -615,6 +664,7 @@ function update(initial: boolean) {
   const p = total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 0
 
   parallax.forEach((q) => (q.el.style.transform = `translateY(${y * q.speed}px)`))
+  if (!reduce) updateRidgeParallax(y, vh)
 
   if (!reduce) updateProjects(vh, p)
 
