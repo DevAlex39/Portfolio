@@ -564,79 +564,152 @@ function buildCheckpoints() {
     return { el, label, bar, p, on: false, finish: !!def.finish, def }
   })
   cpLang = l
-  updateRidgeColors()
-  buildRidgeParallax()
+  buildRidgeBands()
 }
 
-/* Bandes de crete entre certaines sections : teintees selon la meme
-   progression verte -> rouge que le coureur/fil conducteur, pour une
-   transition plus marquee sans toucher aux degrades deja regles de
-   chaque section. */
-function updateRidgeColors() {
-  const root = rootEl.value
-  if (!root) return
-  const max = root.offsetHeight - window.innerHeight
-  const ridges: (HTMLElement | null)[] = [
-    ridgeSkillsEl.value,
-    ridgeProjectsEl.value,
-    ridgeCreationsEl.value,
-    ridgeContactEl.value,
-  ]
-  for (const el of ridges) {
-    if (!el) continue
-    const p = max > 0 ? Math.min(1, Math.max(0, el.offsetTop / max)) : 0
-    const col = runnerColor(p)
-    el.querySelectorAll('.ridge-shape').forEach((shape) => {
-      ;(shape as HTMLElement).style.background = col
+/* --- Bandes de crete : portage du prototype Claude Design "Traversee de
+   crete" ---
+   Chaque bande est un long couloir de scroll (220vh / 150vh mobile, pose
+   en CSS via .ridge-band) dans lequel un stage `position: sticky` reste
+   epingle plein ecran (pin natif, pas de librairie) pendant que cette
+   boucle anime par-dessus : degrade interne par calque (crete claire ->
+   base quasi noire, au lieu d'un aplat uni), rim-light, halo, brume,
+   etoiles, et un ciel qui interpole entre la couleur de la section qui
+   se termine et celle qui commence. Une seule passe par frame pour
+   toutes les bandes, integree a la boucle rAF existante (update()). */
+const RIDGE_GREEN = [82, 183, 136]
+const RIDGE_RED = [239, 68, 68]
+const RIDGE_HAZE = [235, 245, 240]
+const RIDGE_INK = [4, 6, 8]
+
+const RIDGE_L: Record<string, { y: [number, number]; s: [number, number]; x: [number, number]; d: number; op: number; blur: number }> = {
+  far: { y: [18, -6], s: [1, 1.03], x: [-1, 1], d: 0, op: 0.62, blur: 2 },
+  mid: { y: [34, -14], s: [1, 1.08], x: [2.5, -2.5], d: 0.5, op: 0.85, blur: 0.8 },
+  near: { y: [62, -26], s: [1, 1.16], x: [-5, 5], d: 1, op: 1, blur: 0 },
+  fog1: { y: [26, -10], s: [1, 1.04], x: [1, -1], d: 0.3, op: 0.3, blur: 0 },
+  fog2: { y: [46, -22], s: [1, 1.1], x: [-2, 2], d: 0.7, op: 0.3, blur: 0 },
+}
+
+function ridgeMix(a: number[], b: number[], t: number) {
+  return [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)]
+}
+function ridgeRgb(c: number[], a?: number) {
+  return a == null ? `rgb(${c[0]},${c[1]},${c[2]})` : `rgba(${c[0]},${c[1]},${c[2]},${a})`
+}
+const ridgeSmooth = (p: number) => p * p * (3 - 2 * p)
+const ridgeClamp = (v: number, a: number, b: number) => (v < a ? a : v > b ? b : v)
+function ridgeHex(h: string) {
+  return [parseInt(h.slice(1, 3), 16), parseInt(h.slice(3, 5), 16), parseInt(h.slice(5, 7), 16)]
+}
+
+interface RidgeBand {
+  el: HTMLElement
+  stage: HTMLElement
+  sky: HTMLElement
+  stars: HTMLElement
+  glow: HTMLElement | null
+  layers: Record<string, HTMLElement>
+  hueA: number
+  hueB: number
+  skyA: number[]
+  skyB: number[]
+  v: number
+  init: boolean
+}
+
+let ridgeBands: RidgeBand[] = []
+let ridgeLite = false
+
+function buildRidgeBands() {
+  ridgeLite = !!(
+    window.matchMedia &&
+    (window.matchMedia('(max-width: 760px)').matches || window.matchMedia('(pointer: coarse)').matches)
+  )
+  const pin = 220
+  const els = document.querySelectorAll<HTMLElement>('[data-ridge]')
+  ridgeBands = [...els].map((el) => {
+    el.style.height = (ridgeLite ? Math.min(pin, 150) : pin) + 'vh'
+    const layers: Record<string, HTMLElement> = {}
+    el.querySelectorAll<HTMLElement>('[data-layer]').forEach((n) => {
+      const key = n.dataset.layer as string
+      layers[key] = n
+      if (key === 'far' || key === 'fog1' || key === 'fog2') n.style.display = ridgeLite ? 'none' : ''
     })
-  }
+    return {
+      el,
+      stage: el.querySelector<HTMLElement>('[data-stage]')!,
+      sky: el.querySelector<HTMLElement>('[data-sky]')!,
+      stars: el.querySelector<HTMLElement>('[data-stars]')!,
+      glow: el.querySelector<HTMLElement>('[data-glow]'),
+      layers,
+      hueA: parseFloat(el.dataset.hueA || '0'),
+      hueB: parseFloat(el.dataset.hueB || '1'),
+      skyA: ridgeHex(el.dataset.skyA || '#0e131e'),
+      skyB: ridgeHex(el.dataset.skyB || '#0e131e'),
+      v: 0,
+      init: false,
+    }
+  })
 }
 
-/* Parallax local des bandes de crete : chaque calque (far/mid/near) se
-   deplace a une vitesse differente pendant que sa bande traverse la
-   fenetre, pour un vrai effet de profondeur 3D au scroll. On ne peut
-   pas reutiliser le tableau `parallax` generique (base sur le scroll
-   global `y`, adapte a des elements proches du haut de page) : ici
-   chaque bande est loin dans la page, donc on calcule un decalage
-   LOCAL par bande (offsetTop mis en cache, pas de lecture DOM par
-   frame) et on le limite (clamp) a la marge de debordement CSS (15%
-   du cote via .ridge-shape) pour ne jamais reveler de bord vide. */
-let ridgeParallax: { el: HTMLElement; offsetTop: number; speed: number; maxShift: number }[] = []
-const RIDGE_SPEEDS: Record<string, number> = { far: 0.08, mid: 0.2, near: 0.4 }
-// Le debordement CSS (.ridge-shape) est de 22% de la hauteur de la bande ;
-// on limite le decalage a 18% de cette meme hauteur (mesuree par bande,
-// pas une valeur fixe en px) pour ne jamais reveler de bord vide, quelle
-// que soit la taille d'ecran.
-const RIDGE_MAX_SHIFT_RATIO = 0.18
+function updateRidgeBands(vh: number) {
+  if (!ridgeBands.length) return
+  const amp = ridgeLite ? 0.6 : 1
+  for (const b of ridgeBands) {
+    const r = b.el.getBoundingClientRect()
+    if (r.bottom < -vh || r.top > 2 * vh) continue
+    const span = Math.max(1, b.el.offsetHeight - vh)
+    const target = reduce ? 0.5 : ridgeClamp(-r.top / span, 0, 1)
+    b.v = b.init ? b.v + (target - b.v) * 0.12 : target
+    b.init = true
+    const p = b.v
+    const e = ridgeSmooth(p)
+    const t = b.hueA + (b.hueB - b.hueA) * p
+    const C = ridgeMix(RIDGE_GREEN, RIDGE_RED, t)
 
-function buildRidgeParallax() {
-  ridgeParallax = []
-  const ridges: (HTMLElement | null)[] = [
-    ridgeSkillsEl.value,
-    ridgeProjectsEl.value,
-    ridgeCreationsEl.value,
-    ridgeContactEl.value,
-  ]
-  for (const el of ridges) {
-    if (!el) continue
-    const maxShift = el.offsetHeight * RIDGE_MAX_SHIFT_RATIO
-    el.querySelectorAll<HTMLElement>('.ridge-shape').forEach((shape) => {
-      const speed = shape.classList.contains('far')
-        ? RIDGE_SPEEDS.far
-        : shape.classList.contains('mid')
-          ? RIDGE_SPEEDS.mid
-          : RIDGE_SPEEDS.near
-      ridgeParallax.push({ el: shape, offsetTop: el.offsetTop, speed, maxShift })
-    })
-  }
-}
+    b.sky.style.background = `linear-gradient(180deg, ${ridgeRgb(ridgeMix(b.skyA, b.skyB, ridgeClamp((p - 0.15) / 0.7, 0, 1)))} 0%, ${ridgeRgb(
+      ridgeMix(ridgeMix(b.skyA, b.skyB, 0.5), C, 0.18 * (1 - Math.abs(0.5 - p) * 2) + 0.06)
+    )} 62%, ${ridgeRgb(ridgeMix(b.skyB, C, 0.1))} 100%)`
+    b.stars.style.opacity = String(Math.sin(Math.PI * p) * 0.9)
 
-function updateRidgeParallax(y: number, vh: number) {
-  if (!ridgeParallax.length) return
-  for (const q of ridgeParallax) {
-    const local = y - q.offsetTop + vh - vh * 0.5
-    const shift = Math.max(-q.maxShift, Math.min(q.maxShift, local * q.speed))
-    q.el.style.transform = `translateY(${shift}px)`
+    for (const k in RIDGE_L) {
+      const cfg = RIDGE_L[k]
+      const n = b.layers[k]
+      if (!n || n.style.display === 'none') continue
+      const y = cfg.y[0] + (cfg.y[1] - cfg.y[0]) * p * amp
+      const s = cfg.s[0] + (cfg.s[1] - cfg.s[0]) * e
+      const x = (cfg.x[0] + (cfg.x[1] - cfg.x[0]) * p) * amp
+      n.style.transform = `translate3d(${x}%, ${y}vh, 0) scale(${s})`
+
+      if (k === 'fog1' || k === 'fog2') {
+        n.style.opacity = String(cfg.op * (0.5 + 0.5 * Math.sin(Math.PI * p)))
+        n.style.background = `linear-gradient(90deg, transparent, ${ridgeRgb(ridgeMix(C, RIDGE_HAZE, 0.55), 0.5)}, ${ridgeRgb(
+          ridgeMix(C, RIDGE_HAZE, 0.3),
+          0.28
+        )}, transparent)`
+        continue
+      }
+
+      const d = cfg.d
+      const crest = ridgeMix(C, RIDGE_HAZE, 0.42 - 0.34 * d)
+      const crestD = ridgeMix(crest, RIDGE_INK, 0.1 + 0.5 * d)
+      const base = ridgeMix(crestD, RIDGE_INK, 0.78)
+      const body = n.querySelector<HTMLElement>('[data-body]')!
+      const rimEl = n.querySelector<HTMLElement>('[data-rim]')!
+      const skirt = n.querySelector<HTMLElement>('[data-skirt]')!
+      body.style.background = `linear-gradient(180deg, ${ridgeRgb(crestD)} 0%, ${ridgeRgb(ridgeMix(crestD, base, 0.5))} 46%, ${ridgeRgb(base)} 100%)`
+      skirt.style.background = ridgeRgb(base)
+      rimEl.style.background = ridgeRgb(base)
+      n.style.opacity = String(cfg.op)
+      n.style.filter = cfg.blur && !ridgeLite ? `blur(${cfg.blur}px)` : 'none'
+    }
+
+    if (b.glow) {
+      const midY = RIDGE_L.mid.y[0] + (RIDGE_L.mid.y[1] - RIDGE_L.mid.y[0]) * p * amp
+      b.glow.style.top = 34 + midY + 'vh'
+      b.glow.style.opacity = String(0.55 * Math.sin(Math.PI * ridgeClamp(p * 1.1, 0, 1)))
+      b.glow.style.background = `radial-gradient(60% 100% at 50% 60%, ${ridgeRgb(ridgeMix(C, RIDGE_HAZE, 0.25), 0.42)}, transparent 72%)`
+    }
   }
 }
 
@@ -664,7 +737,7 @@ function update(initial: boolean) {
   const p = total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 0
 
   parallax.forEach((q) => (q.el.style.transform = `translateY(${y * q.speed}px)`))
-  if (!reduce) updateRidgeParallax(y, vh)
+  updateRidgeBands(vh)
 
   if (!reduce) updateProjects(vh, p)
 
@@ -1589,10 +1662,39 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeSkillsEl" class="ridge-divider" aria-hidden="true">
-      <div class="ridge-shape far"></div>
-      <div class="ridge-shape mid"></div>
-      <div class="ridge-shape near"></div>
+    <div ref="ridgeSkillsEl" class="ridge-band" data-ridge data-hue-a=".05" data-hue-b=".25" data-sky-a="#0e131e" data-sky-b="#0e131e" aria-hidden="true">
+      <div class="ridge-stage" data-stage>
+        <div class="ridge-sky" data-sky></div>
+        <div class="ridge-stars" data-stars>
+          <span class="ridge-star" style="left: 12%; top: 18%; width: 2px; height: 2px; opacity: 0.7"></span>
+          <span class="ridge-star" style="left: 27%; top: 9%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 41%; top: 24%; width: 2.5px; height: 2.5px; opacity: 0.85"></span>
+          <span class="ridge-star" style="left: 58%; top: 13%; width: 2px; height: 2px; opacity: 0.6"></span>
+          <span class="ridge-star" style="left: 69%; top: 27%; width: 1.5px; height: 1.5px; opacity: 0.45"></span>
+          <span class="ridge-star" style="left: 81%; top: 8%; width: 2px; height: 2px; opacity: 0.75"></span>
+          <span class="ridge-star" style="left: 91%; top: 21%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 34%; top: 33%; width: 1.5px; height: 1.5px; opacity: 0.4"></span>
+          <span class="ridge-shoot" style="right: 14%; top: 15%; width: 110px; height: 2px"></span>
+        </div>
+        <div class="ridge-glow" data-glow></div>
+        <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
+        <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
+        <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Expériences -->
@@ -1642,10 +1744,39 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeProjectsEl" class="ridge-divider" aria-hidden="true">
-      <div class="ridge-shape far"></div>
-      <div class="ridge-shape mid"></div>
-      <div class="ridge-shape near"></div>
+    <div ref="ridgeProjectsEl" class="ridge-band" data-ridge data-hue-a=".30" data-hue-b=".50" data-sky-a="#1a0f15" data-sky-b="#1a0f15" aria-hidden="true">
+      <div class="ridge-stage" data-stage>
+        <div class="ridge-sky" data-sky></div>
+        <div class="ridge-stars" data-stars>
+          <span class="ridge-star" style="left: 12%; top: 18%; width: 2px; height: 2px; opacity: 0.7"></span>
+          <span class="ridge-star" style="left: 27%; top: 9%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 41%; top: 24%; width: 2.5px; height: 2.5px; opacity: 0.85"></span>
+          <span class="ridge-star" style="left: 58%; top: 13%; width: 2px; height: 2px; opacity: 0.6"></span>
+          <span class="ridge-star" style="left: 69%; top: 27%; width: 1.5px; height: 1.5px; opacity: 0.45"></span>
+          <span class="ridge-star" style="left: 81%; top: 8%; width: 2px; height: 2px; opacity: 0.75"></span>
+          <span class="ridge-star" style="left: 91%; top: 21%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 34%; top: 33%; width: 1.5px; height: 1.5px; opacity: 0.4"></span>
+          <span class="ridge-shoot" style="right: 14%; top: 15%; width: 110px; height: 2px"></span>
+        </div>
+        <div class="ridge-glow" data-glow></div>
+        <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
+        <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
+        <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Projets (scroll horizontal épinglé) -->
@@ -1761,10 +1892,39 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeCreationsEl" class="ridge-divider" aria-hidden="true">
-      <div class="ridge-shape far"></div>
-      <div class="ridge-shape mid"></div>
-      <div class="ridge-shape near"></div>
+    <div ref="ridgeCreationsEl" class="ridge-band" data-ridge data-hue-a=".55" data-hue-b=".75" data-sky-a="#170a0d" data-sky-b="#170a0d" aria-hidden="true">
+      <div class="ridge-stage" data-stage>
+        <div class="ridge-sky" data-sky></div>
+        <div class="ridge-stars" data-stars>
+          <span class="ridge-star" style="left: 12%; top: 18%; width: 2px; height: 2px; opacity: 0.7"></span>
+          <span class="ridge-star" style="left: 27%; top: 9%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 41%; top: 24%; width: 2.5px; height: 2.5px; opacity: 0.85"></span>
+          <span class="ridge-star" style="left: 58%; top: 13%; width: 2px; height: 2px; opacity: 0.6"></span>
+          <span class="ridge-star" style="left: 69%; top: 27%; width: 1.5px; height: 1.5px; opacity: 0.45"></span>
+          <span class="ridge-star" style="left: 81%; top: 8%; width: 2px; height: 2px; opacity: 0.75"></span>
+          <span class="ridge-star" style="left: 91%; top: 21%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 34%; top: 33%; width: 1.5px; height: 1.5px; opacity: 0.4"></span>
+          <span class="ridge-shoot" style="right: 14%; top: 15%; width: 110px; height: 2px"></span>
+        </div>
+        <div class="ridge-glow" data-glow></div>
+        <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
+        <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
+        <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Créations -->
@@ -1810,10 +1970,39 @@ const trailPath =
       </div>
     </section>
 
-    <div ref="ridgeContactEl" class="ridge-divider" aria-hidden="true">
-      <div class="ridge-shape far"></div>
-      <div class="ridge-shape mid"></div>
-      <div class="ridge-shape near"></div>
+    <div ref="ridgeContactEl" class="ridge-band" data-ridge data-hue-a=".78" data-hue-b=".95" data-sky-a="#0d0709" data-sky-b="#170a0d" aria-hidden="true">
+      <div class="ridge-stage" data-stage>
+        <div class="ridge-sky" data-sky></div>
+        <div class="ridge-stars" data-stars>
+          <span class="ridge-star" style="left: 12%; top: 18%; width: 2px; height: 2px; opacity: 0.7"></span>
+          <span class="ridge-star" style="left: 27%; top: 9%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 41%; top: 24%; width: 2.5px; height: 2.5px; opacity: 0.85"></span>
+          <span class="ridge-star" style="left: 58%; top: 13%; width: 2px; height: 2px; opacity: 0.6"></span>
+          <span class="ridge-star" style="left: 69%; top: 27%; width: 1.5px; height: 1.5px; opacity: 0.45"></span>
+          <span class="ridge-star" style="left: 81%; top: 8%; width: 2px; height: 2px; opacity: 0.75"></span>
+          <span class="ridge-star" style="left: 91%; top: 21%; width: 1.5px; height: 1.5px; opacity: 0.5"></span>
+          <span class="ridge-star" style="left: 34%; top: 33%; width: 1.5px; height: 1.5px; opacity: 0.4"></span>
+          <span class="ridge-shoot" style="right: 14%; top: 15%; width: 110px; height: 2px"></span>
+        </div>
+        <div class="ridge-glow" data-glow></div>
+        <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
+        <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
+        </div>
+        <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
+        <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
+        </div>
+      </div>
     </div>
 
     <!-- Contact -->

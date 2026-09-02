@@ -1092,65 +1092,100 @@ footer {
 }
 
 /* --- Bandes de crete entre sections (transitions) --- */
-/* Hauteur calee sur l'aspect ratio reel des calques recadres
-   (1584x603 = 2.627:1, memes proportions sur les 3 calques pour rester
-   alignes entre eux). `aspect-ratio` remplace l'ancien calcul en vw
-   avec un plafond en px : ce plafond faisait que sur tout ecran de
-   bureau (> ~1000px de large), la hauteur restait bloquee a 380px alors
-   que la largeur continuait de suivre 100% du viewport — d'ou l'effet
-   "montagnes ecrasees" en aplatissant le ratio 2.627:1 jusqu'a 5:1+.
-   `aspect-ratio` garantit le bon ratio a toute largeur, sans jamais
-   dependre d'une valeur fixe en px. Le max-width limite juste la taille
-   absolue sur les tres grands ecrans, en gardant les deux dimensions
-   liees (donc toujours sans etirement). */
-.ridge-divider {
+/* Portage du prototype Claude Design "Traversee de crete" : la bande est un
+   long couloir de scroll (220vh, 150vh sur mobile) dans lequel un stage
+   `position: sticky` reste epingle plein ecran pendant que le JS anime les
+   calques par-dessus — pin natif, pas de librairie de scroll. Le detail
+   (degrade interne par calque, rim-light, halo, brume, ciel qui interpole
+   entre les 2 sections voisines) est entierement pilote en JS a chaque
+   frame (voir ridgeBands/updateRidgeBands dans Home.vue) ; le CSS ne pose
+   que la structure et les elements statiques (masques, tailles, positions
+   de base). */
+.ridge-band {
   position: relative;
-  width: 100%;
-  max-width: 1800px;
-  margin: 0 auto;
-  aspect-ratio: 1584 / 603;
-  overflow: hidden;
   z-index: 3;
+  height: 220vh;
   pointer-events: none;
 }
-/* Trois calques empiles pour une vraie profondeur (perspective
-   atmospherique : le plus lointain est le plus clair/discret, le plus
-   proche le plus sombre/detaille) — memes proportions que le calque
-   sur lequel elles sont recadrees, donc pas de re-etirement.
-   Debordement de 15% sur les 4 cotes (via left/right/bottom negatifs +
-   height 130%) : reserve de la marge pour le parallax (translateY en JS)
-   sans jamais reveler de bord vide, tout en gardant le meme ratio
-   largeur/hauteur donc sans re-etirement (les deux axes sont agrandis
-   du meme facteur). */
-.ridge-shape {
+.ridge-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+.ridge-sky,
+.ridge-stars {
   position: absolute;
-  left: -22%;
-  right: -22%;
-  bottom: -22%;
-  height: 144%;
-  transition: background-color 0.6s ease;
+  inset: 0;
+}
+.ridge-star {
+  position: absolute;
+  border-radius: 50%;
+  background: #eef2ef;
+}
+.ridge-shoot {
+  position: absolute;
+  border-radius: 2px;
+  background: linear-gradient(90deg, rgba(238, 242, 239, 0.9), transparent);
+  animation: ridgeShoot 11s linear infinite;
+}
+@keyframes ridgeShoot {
+  0%,
+  88% {
+    opacity: 0;
+    transform: translate(0, 0) rotate(16deg);
+  }
+  91% {
+    opacity: 0.9;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-34vw, 10vw) rotate(16deg);
+  }
+}
+.ridge-glow {
+  position: absolute;
+  left: 50%;
+  width: 130%;
+  height: 46vh;
+  transform: translate(-50%, -50%);
+  filter: blur(64px);
+  pointer-events: none;
+}
+.ridge-layer {
+  position: absolute;
+  bottom: -8vh;
+  aspect-ratio: 1584 / 603;
   will-change: transform;
 }
-.ridge-shape.far {
-  opacity: 0.35;
-  -webkit-mask-image: url(/mountains-ridge-far.webp);
-  mask-image: url(/mountains-ridge-far.webp);
-}
-.ridge-shape.mid {
-  opacity: 0.62;
-  -webkit-mask-image: url(/mountains-ridge-mid.webp);
-  mask-image: url(/mountains-ridge-mid.webp);
-}
-.ridge-shape.near {
-  opacity: 0.95;
-  -webkit-mask-image: url(/mountains-ridge-near.webp);
-  mask-image: url(/mountains-ridge-near.webp);
-}
-.ridge-shape {
+.ridge-rim,
+.ridge-body {
+  position: absolute;
+  inset: 0;
   -webkit-mask-size: 100% 100%;
   mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-repeat: no-repeat;
   -webkit-mask-position: center bottom;
   mask-position: center bottom;
+}
+.ridge-body {
+  transform: translateY(4px);
+}
+.ridge-skirt {
+  position: absolute;
+  top: 99%;
+  left: 0;
+  right: 0;
+}
+.ridge-fog {
+  position: absolute;
+  pointer-events: none;
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ridge-shoot {
+    animation: none;
+    opacity: 0;
+  }
 }
