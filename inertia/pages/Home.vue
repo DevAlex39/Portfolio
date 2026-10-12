@@ -625,7 +625,7 @@ function buildRidgeBands() {
     window.matchMedia &&
     (window.matchMedia('(max-width: 760px)').matches || window.matchMedia('(pointer: coarse)').matches)
   )
-  const pin = 220
+  const pin = 170
   const els = document.querySelectorAll<HTMLElement>('[data-ridge]')
   ridgeBands = [...els].map((el) => {
     el.style.height = (ridgeLite ? Math.min(pin, 150) : pin) + 'vh'
@@ -690,16 +690,22 @@ function updateRidgeBands(vh: number) {
         continue
       }
 
+      // Nos calques sont recadres au plus pres du terrain (quasi plus de
+      // ciel dans la boite, contrairement aux images du prototype
+      // d'origine) : le degrade crete->base doit donc etre etale sur une
+      // zone BEAUCOUP plus grande et rester plus clair, sinon la quasi-
+      // totalite du calque fonce vers l'encre et donne une impression de
+      // grand vide noir au lieu d'un relief degrade.
       const d = cfg.d
       const crest = ridgeMix(C, RIDGE_HAZE, 0.42 - 0.34 * d)
-      const crestD = ridgeMix(crest, RIDGE_INK, 0.1 + 0.5 * d)
-      const base = ridgeMix(crestD, RIDGE_INK, 0.78)
+      const crestD = ridgeMix(crest, RIDGE_INK, 0.08 + 0.3 * d)
+      const base = ridgeMix(crestD, RIDGE_INK, 0.22 + 0.3 * d)
       const body = n.querySelector<HTMLElement>('[data-body]')!
       const rimEl = n.querySelector<HTMLElement>('[data-rim]')!
       const skirt = n.querySelector<HTMLElement>('[data-skirt]')!
-      body.style.background = `linear-gradient(180deg, ${ridgeRgb(crestD)} 0%, ${ridgeRgb(ridgeMix(crestD, base, 0.5))} 46%, ${ridgeRgb(base)} 100%)`
+      body.style.background = `linear-gradient(180deg, ${ridgeRgb(crestD)} 0%, ${ridgeRgb(ridgeMix(crestD, base, 0.5))} 78%, ${ridgeRgb(base)} 100%)`
       skirt.style.background = ridgeRgb(base)
-      rimEl.style.background = ridgeRgb(base)
+      rimEl.style.background = ridgeRgb(crestD)
       n.style.opacity = String(cfg.op)
       n.style.filter = cfg.blur && !ridgeLite ? `blur(${cfg.blur}px)` : 'none'
     }

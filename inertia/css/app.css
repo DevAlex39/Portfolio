@@ -1169,9 +1169,11 @@ footer {
   -webkit-mask-position: center bottom;
   mask-position: center bottom;
 }
-.ridge-body {
-  transform: translateY(4px);
-}
+/* Pas de decalage entre rim et body : nos calques sont recadres au plus
+   pres du terrain (quasi plus de marge de ciel dans la boite), donc le
+   moindre offset entre les deux (comme dans le prototype d'origine, pense
+   pour des images avec beaucoup de ciel autour d'un petit pic) faisait
+   ressortir un liseré sombre bien net le long de la crete. */
 .ridge-skirt {
   position: absolute;
   top: 99%;
