@@ -652,8 +652,9 @@ function buildRidgeBands() {
   })
 }
 
-function updateRidgeBands(vh: number) {
-  if (!ridgeBands.length) return
+function updateRidgeBands(vh: number): boolean {
+  let settling = false
+  if (!ridgeBands.length) return false
   const amp = ridgeLite ? 0.6 : 1
   for (const b of ridgeBands) {
     const r = b.el.getBoundingClientRect()
@@ -661,6 +662,7 @@ function updateRidgeBands(vh: number) {
     const span = Math.max(1, b.el.offsetHeight - vh)
     const target = reduce ? 0.5 : ridgeClamp(-r.top / span, 0, 1)
     b.v = b.init ? b.v + (target - b.v) * 0.12 : target
+    if (Math.abs(target - b.v) > 0.002) settling = true
     b.init = true
     const p = b.v
     const e = ridgeSmooth(p)
@@ -717,6 +719,7 @@ function updateRidgeBands(vh: number) {
       b.glow.style.background = `radial-gradient(60% 100% at 50% 60%, ${ridgeRgb(ridgeMix(C, RIDGE_HAZE, 0.25), 0.42)}, transparent 72%)`
     }
   }
+  return settling
 }
 
 function onScroll() {
@@ -743,7 +746,11 @@ function update(initial: boolean) {
   const p = total > 0 ? Math.min(1, Math.max(0, scrolled / total)) : 0
 
   parallax.forEach((q) => (q.el.style.transform = `translateY(${y * q.speed}px)`))
-  updateRidgeBands(vh)
+  if (updateRidgeBands(vh)) {
+    // le lissage doit continuer apres l arret du scroll
+    cancelAnimationFrame(raf)
+    raf = requestAnimationFrame(() => update(false))
+  }
 
   if (!reduce) updateProjects(vh, p)
 
@@ -1446,7 +1453,7 @@ const trailPath =
 <template>
   <Head :title="lang === 'fr' ? 'Accueil' : 'Home'" />
 
-  <div ref="rootEl" :class="{ 'lang-fade': langFade }" style="position: relative; width: 100%; overflow-x: hidden">
+  <div ref="rootEl" :class="{ 'lang-fade': langFade }" style="position: relative; width: 100%; overflow-x: clip">
     <!-- Intro AlpaStudio (une fois par session) -->
     <div v-if="introOn" class="intro-veil">
       <div class="intro-inner">
@@ -1684,20 +1691,20 @@ const trailPath =
         </div>
         <div class="ridge-glow" data-glow></div>
         <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
         <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
         <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
         </div>
       </div>
@@ -1766,20 +1773,20 @@ const trailPath =
         </div>
         <div class="ridge-glow" data-glow></div>
         <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
         <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
         <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
         </div>
       </div>
@@ -1914,20 +1921,20 @@ const trailPath =
         </div>
         <div class="ridge-glow" data-glow></div>
         <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
         <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
         <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
         </div>
       </div>
@@ -1992,20 +1999,20 @@ const trailPath =
         </div>
         <div class="ridge-glow" data-glow></div>
         <div class="ridge-layer" data-layer="far" style="left: -10%; width: 120%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.webp); mask-image: url(/mountains-ridge-far.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-far.svg); mask-image: url(/mountains-ridge-far.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog1" style="left: -20%; width: 140%; bottom: 26vh; height: 110px; filter: blur(30px)"></div>
         <div class="ridge-layer" data-layer="mid" style="left: -20%; width: 140%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.webp); mask-image: url(/mountains-ridge-mid.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-mid.svg); mask-image: url(/mountains-ridge-mid.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 140vh"></div>
         </div>
         <div class="ridge-fog" data-layer="fog2" style="left: -20%; width: 140%; bottom: 8vh; height: 130px; filter: blur(34px)"></div>
         <div class="ridge-layer" data-layer="near" style="left: -35%; width: 170%">
-          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
-          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.webp); mask-image: url(/mountains-ridge-near.webp)"></div>
+          <div class="ridge-rim" data-rim style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
+          <div class="ridge-body" data-body style="-webkit-mask-image: url(/mountains-ridge-near.svg); mask-image: url(/mountains-ridge-near.svg)"></div>
           <div class="ridge-skirt" data-skirt style="height: 160vh"></div>
         </div>
       </div>
