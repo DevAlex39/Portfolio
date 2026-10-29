@@ -296,16 +296,15 @@ const creations = computed(() => {
       accent: '#48cae4',
     },
     {
-      icon: '🧬',
-      name: 'XENOGRAFT',
-      url: null,
-      domain: f ? 'Roguelike solo & gacha' : 'Solo roguelike & gacha',
+      icon: '🏔️',
+      name: 'AlpaS',
+      url: 'https://alpas.alpastudio.fr',
+      domain: f ? 'Outil GPX pour traileurs' : 'GPX toolkit for trail runners',
       desc: f
-        ? 'Un roguelike original : greffez des parties de créatures sur un monstre unique qui s’assemble au fil de la run, invoquez de nouvelles pièces via un portail interdimensionnel.'
-        : 'An original roguelike: graft creature parts onto a single monster that assembles itself run after run, summon new pieces through an interdimensional portal.',
-      tags: f ? ['Vue.js', 'Node.js', 'MySQL'] : ['Vue.js', 'Node.js', 'MySQL'],
-      accent: '#9b30ff',
-      comingSoon: true,
+        ? 'Génération, ajustement et modification de traces GPX : traceur sur carte, plan de course avec allures, ravitos et temps ciblé, boucles découverte autour de chez soi.'
+        : 'Generate, tweak and edit GPX tracks: map route drawing, race plans with pacing, aid stations and target time, discovery loops around you.',
+      tags: f ? ['AdonisJS', 'Vue 3', 'Inertia', 'MySQL'] : ['AdonisJS', 'Vue 3', 'Inertia', 'MySQL'],
+      accent: '#e08a3c',
     },
   ]
 })
