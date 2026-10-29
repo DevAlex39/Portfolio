@@ -306,6 +306,17 @@ const creations = computed(() => {
       tags: f ? ['AdonisJS', 'Vue 3', 'Inertia', 'MySQL'] : ['AdonisJS', 'Vue 3', 'Inertia', 'MySQL'],
       accent: '#e08a3c',
     },
+    {
+      icon: '📦',
+      name: f ? 'Plateforme de téléchargement' : 'Download platform',
+      url: 'https://telechargement.alpastudio.fr',
+      domain: f ? 'Partage de fichiers' : 'File sharing',
+      desc: f
+        ? 'Un mini serveur de fichiers pour mettre à disposition mes projets et fichiers à télécharger, simplement et en ligne.'
+        : 'A lightweight file server to publish my projects and downloadable files, simply and online.',
+      tags: f ? ['Nuxt 4', 'Node.js'] : ['Nuxt 4', 'Node.js'],
+      accent: '#a78bfa',
+    },
   ]
 })
 
