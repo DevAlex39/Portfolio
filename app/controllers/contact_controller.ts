@@ -2,6 +2,10 @@ import type { HttpContext } from '@adonisjs/core/http'
 import { contactValidator } from '#validators/contact'
 import env from '#start/env'
 import nodemailer from 'nodemailer'
+import { createLimiter } from '../services/rate_limit.js'
+
+/** Anti-spam: at most 20 contact messages per hour across all visitors. */
+const sent = createLimiter({ windowMs: 60 * 60 * 1000, max: 20 })
 
 function escapeHtml(value: string) {
   return value
@@ -21,6 +25,14 @@ export default class ContactController {
    */
   async store({ request, response, session }: HttpContext) {
     const data = await request.validateUsing(contactValidator)
+
+    if (sent.blocked('all')) {
+      session.flash('errors', {
+        send: 'Trop de messages envoyés en peu de temps. Réessayez plus tard ou écrivez-moi directement par email.',
+      })
+      return response.redirect().back()
+    }
+    sent.hit('all')
 
     const host = env.get('SMTP_HOST')
     const user = env.get('SMTP_USER')

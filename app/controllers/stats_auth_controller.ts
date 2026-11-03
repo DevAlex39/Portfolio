@@ -1,6 +1,10 @@
 import type { HttpContext } from '@adonisjs/core/http'
 import env from '#start/env'
 import { timingSafeEqual } from 'node:crypto'
+import { createLimiter } from '../services/rate_limit.js'
+
+/** 20 failed logins within 15 minutes (all visitors) lock the form for 15 minutes. */
+const failures = createLimiter({ windowMs: 15 * 60 * 1000, max: 20 })
 
 /**
  * Constant-time string comparison (avoids leaking password length/
@@ -23,8 +27,13 @@ export default class StatsAuthController {
   }
 
   async login({ request, session, response }: HttpContext) {
-    const username = request.input('username', '')
-    const password = request.input('password', '')
+    if (failures.blocked('all')) {
+      session.flash('error', 'Trop de tentatives. Réessayez dans 15 minutes.')
+      return response.redirect().back()
+    }
+
+    const username = String(request.input('username', ''))
+    const password = String(request.input('password', ''))
 
     const expectedUser = env.get('STATS_USERNAME')
     const expectedPass = env.get('STATS_PASSWORD')
@@ -36,6 +45,7 @@ export default class StatsAuthController {
       safeEqual(password, expectedPass)
 
     if (!ok) {
+      failures.hit('all')
       session.flash('error', 'Identifiant ou mot de passe incorrect.')
       return response.redirect().back()
     }
