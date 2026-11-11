@@ -287,6 +287,7 @@ const creations = computed(() => {
     {
       icon: '🕹️',
       name: 'Arcade Zone',
+      hidden: true, // désactivé : retirer cette ligne pour réafficher la carte
       url: 'https://arcade.alpastudio.fr',
       domain: f ? 'Plateforme de jeux multijoueur' : 'Multiplayer games platform',
       desc: f
@@ -297,8 +298,8 @@ const creations = computed(() => {
     },
     {
       icon: '🏔️',
-      name: 'AlpaS',
-      url: 'https://alpas.alpastudio.fr',
+      name: 'Alpast',
+      url: 'https://www.alpast.com',
       domain: f ? 'Outil GPX pour traileurs' : 'GPX toolkit for trail runners',
       desc: f
         ? 'Génération, ajustement et modification de traces GPX : traceur sur carte, plan de course avec allures, ravitos et temps ciblé, boucles découverte autour de chez soi.'
@@ -317,7 +318,7 @@ const creations = computed(() => {
       tags: f ? ['Nuxt 4', 'Node.js'] : ['Nuxt 4', 'Node.js'],
       accent: '#a78bfa',
     },
-  ]
+  ].filter((c) => !('hidden' in c && c.hidden))
 })
 
 const stats = computed(() => [
@@ -2041,10 +2042,6 @@ const trailPath =
               <a href="mailto:paillot.alexis.ap@gmail.com" style="display: flex; align-items: center; gap: 0.9rem; color: #cbd6cf; text-decoration: none; font-size: 0.92rem; transition: color 0.2s">
                 <span style="width: 40px; height: 40px; border-radius: 10px; background: rgba(82, 183, 136, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.05rem">✉</span>
                 paillot.alexis.ap@gmail.com
-              </a>
-              <a href="https://github.com/DevAlex39" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 0.9rem; color: #cbd6cf; text-decoration: none; font-size: 0.92rem; transition: color 0.2s">
-                <span style="width: 40px; height: 40px; border-radius: 10px; background: rgba(239, 68, 68, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.05rem">⌥</span>
-                GitHub — DevAlex39
               </a>
               <a href="https://alpastudio.fr" target="_blank" rel="noopener" style="display: flex; align-items: center; gap: 0.9rem; color: #cbd6cf; text-decoration: none; font-size: 0.92rem; transition: color 0.2s">
                 <span style="width: 40px; height: 40px; border-radius: 10px; background: rgba(72, 202, 228, 0.12); display: flex; align-items: center; justify-content: center; font-size: 1.05rem">🏔</span>
